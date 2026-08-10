@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   getMonthDays, isWeekOff, isHoliday, getHolidayName, isDayOff,
   isDayActiveForEmployee, isEmployeeActiveInMonth,
-  formatYearMonth, getPrevMonth, getNextMonth, MONTH_NAMES, DAY_SHORT
+  formatYearMonth, getPrevMonth, getNextMonth,
+  getSaturdayNumber, MONTH_NAMES, DAY_SHORT
 } from '../lib/dateUtils';
 import {
   getEmployees, saveEmployees, getAttendance, saveAttendance,
@@ -192,16 +193,64 @@ function EmployeeModal({ initial, onSave, onClose, onDelete }) {
   );
 }
 
-// ─── Settings Modal (Week-off + Holidays) ────────────────────────────────────
+// ─── Settings Modal (Week-off + Holidays + Custom day overrides) ──────────────
 
 function SettingsModal({ yearMonth, year, month, settings, onSave, onClose }) {
   const [wos,        setWos]        = useState(settings.weekOffSaturdays ?? [1, 3]);
   const [sunOff,     setSunOff]     = useState(settings.allSundaysOff ?? true);
   const [holidays,   setHolidays]   = useState(settings.holidays ?? []);
+  const [customWOs,  setCustomWOs]  = useState(settings.customWeekOffs ?? []);
+  const [exceptions, setExceptions] = useState(settings.weekOffExceptions ?? []);
   const [holDay,     setHolDay]     = useState('');
   const [holName,    setHolName]    = useState('');
 
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const allDays     = getMonthDays(year, month);
+  const daysInMonth = allDays.length;
+  const firstDOW    = allDays[0].getDay(); // 0=Sun
+
+  // Check default week-off by day-of-week rules only (no custom overrides)
+  const isDefaultOff = (date) => {
+    const day = date.getDay();
+    if (day === 0) return sunOff;
+    if (day === 6) return wos.includes(getSaturdayNumber(date));
+    return false;
+  };
+
+  // Effective status of each day considering all overrides
+  const getDayStatus = (date) => {
+    const d = date.getDate();
+    if (exceptions.includes(d)) return 'exception';  // forced working
+    if (customWOs.includes(d))  return 'custom-wo';  // forced week-off
+    if (isDefaultOff(date))     return 'weekoff';    // default week-off
+    return 'working';
+  };
+
+  const toggleDay = (date) => {
+    const d      = date.getDate();
+    const status = getDayStatus(date);
+    if (status === 'weekoff') {
+      // Default WO → force working (add exception)
+      setExceptions(prev => [...prev, d].sort((a,b)=>a-b));
+      setCustomWOs(prev => prev.filter(x => x !== d));
+    } else if (status === 'exception') {
+      // Exception → remove exception (back to default WO)
+      setExceptions(prev => prev.filter(x => x !== d));
+    } else if (status === 'working') {
+      // Working → force week-off (add custom WO)
+      setCustomWOs(prev => [...prev, d].sort((a,b)=>a-b));
+      setExceptions(prev => prev.filter(x => x !== d));
+    } else if (status === 'custom-wo') {
+      // Custom WO → remove (back to working)
+      setCustomWOs(prev => prev.filter(x => x !== d));
+    }
+  };
+
+  const dayStyle = {
+    'weekoff':   'bg-gray-200 text-gray-500 hover:bg-blue-100 hover:text-blue-700',
+    'exception': 'bg-blue-100 text-blue-700 ring-2 ring-blue-400 hover:bg-gray-200 hover:text-gray-500',
+    'custom-wo': 'bg-amber-200 text-amber-800 hover:bg-gray-50 hover:text-gray-500',
+    'working':   'bg-white text-gray-700 border border-gray-200 hover:bg-amber-100 hover:text-amber-700',
+  };
 
   const toggleSat = (n) => setWos(prev =>
     prev.includes(n) ? prev.filter(x => x !== n) : [...prev, n].sort()
@@ -209,50 +258,129 @@ function SettingsModal({ yearMonth, year, month, settings, onSave, onClose }) {
 
   const addHoliday = () => {
     const d = Number(holDay);
-    if (!d || !holName.trim()) return;
-    if (holidays.find(h => h.day === d)) return;
-    setHolidays(prev => [...prev, { day: d, name: holName.trim() }].sort((a, b) => a.day - b.day));
+    if (!d || !holName.trim() || holidays.find(h => h.day === d)) return;
+    setHolidays(prev => [...prev, { day: d, name: holName.trim() }].sort((a,b) => a.day - b.day));
     setHolDay(''); setHolName('');
   };
 
   const removeHoliday = (day) => setHolidays(prev => prev.filter(h => h.day !== day));
 
+  const saveAll = () => onSave({
+    weekOffSaturdays: wos, allSundaysOff: sunOff, holidays,
+    customWeekOffs: customWOs, weekOffExceptions: exceptions,
+  });
+
   return (
-    <Modal title={`Settings — ${yearMonth}`} onClose={onClose}>
+    <Modal title={`Settings — ${yearMonth}`} onClose={onClose} wide>
       <div className="space-y-6">
 
-        {/* Sundays */}
+        {/* ── Visual Calendar ─────────────────────────────── */}
         <div>
-          <p className="text-sm font-semibold text-gray-700 mb-3">Sundays</p>
+          <p className="text-sm font-semibold text-gray-800 mb-1">Monthly Day Override</p>
+          <p className="text-xs text-gray-400 mb-3">Click any day to toggle week-off / working day</p>
+
+          {/* Legend */}
+          <div className="flex flex-wrap gap-3 mb-3 text-xs">
+            {[
+              ['bg-gray-200 text-gray-500','Default Week-Off'],
+              ['bg-white border border-gray-200 text-gray-700','Working Day'],
+              ['bg-amber-200 text-amber-800','Custom Week-Off'],
+              ['bg-blue-100 text-blue-700 ring-2 ring-blue-400','Forced Working'],
+            ].map(([cls, label]) => (
+              <span key={label} className="flex items-center gap-1.5">
+                <span className={`inline-block w-5 h-5 rounded text-center text-[10px] leading-5 font-bold ${cls}`}>·</span>
+                <span className="text-gray-500">{label}</span>
+              </span>
+            ))}
+          </div>
+
+          {/* Calendar grid */}
+          <div className="border border-gray-100 rounded-xl overflow-hidden">
+            {/* Day-of-week header */}
+            <div className="grid grid-cols-7 bg-gray-50 border-b border-gray-100">
+              {DAY_SHORT.map(d => (
+                <div key={d} className="text-center text-xs font-semibold text-gray-400 py-1.5">{d}</div>
+              ))}
+            </div>
+            {/* Day cells */}
+            <div className="grid grid-cols-7 gap-1 p-2">
+              {/* Empty cells for first week alignment */}
+              {Array.from({ length: firstDOW }).map((_, i) => <div key={`e${i}`} />)}
+              {allDays.map(date => {
+                const status = getDayStatus(date);
+                const isHol  = holidays.some(h => h.day === date.getDate());
+                return (
+                  <button key={date.getDate()} onClick={() => toggleDay(date)}
+                    title={
+                      status === 'exception' ? 'Click to restore as week-off' :
+                      status === 'custom-wo' ? 'Click to restore as working day' :
+                      status === 'weekoff'   ? 'Click to make working day' :
+                                              'Click to make week-off'
+                    }
+                    className={`relative rounded-lg py-1.5 text-center transition select-none ${dayStyle[status]}`}>
+                    <div className="text-xs font-bold leading-none">{date.getDate()}</div>
+                    <div className="text-[9px] mt-0.5 opacity-70 leading-none">
+                      {status === 'exception' ? 'WORK' :
+                       status === 'custom-wo' ? 'WO' :
+                       status === 'weekoff'   ? 'WO' : ''}
+                    </div>
+                    {isHol && (
+                      <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-emerald-400 rounded-full" title="Holiday" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Summary of custom changes */}
+          {(customWOs.length > 0 || exceptions.length > 0) && (
+            <div className="mt-2 flex flex-wrap gap-2 text-xs">
+              {customWOs.length > 0 && (
+                <span className="px-2 py-1 bg-amber-50 border border-amber-200 rounded-full text-amber-700">
+                  Extra week-offs: {customWOs.join(', ')}
+                </span>
+              )}
+              {exceptions.length > 0 && (
+                <span className="px-2 py-1 bg-blue-50 border border-blue-200 rounded-full text-blue-700">
+                  Forced working: {exceptions.join(', ')}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ── Default Rules ────────────────────────────────── */}
+        <div className="border-t border-gray-100 pt-5 space-y-4">
+          <p className="text-sm font-semibold text-gray-800">Default Rules <span className="text-xs font-normal text-gray-400">(updates calendar above)</span></p>
+
+          {/* Sundays */}
           <label className="flex items-center gap-3 cursor-pointer">
             <div onClick={() => setSunOff(v => !v)}
-              className={`w-11 h-6 rounded-full transition-colors relative ${sunOff ? 'bg-indigo-500' : 'bg-gray-200'}`}>
+              className={`w-11 h-6 rounded-full transition-colors relative flex-shrink-0 ${sunOff ? 'bg-indigo-500' : 'bg-gray-200'}`}>
               <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${sunOff ? 'left-6' : 'left-1'}`} />
             </div>
             <span className="text-sm text-gray-700">All Sundays are week-off</span>
           </label>
-        </div>
 
-        {/* Saturdays */}
-        <div>
-          <p className="text-sm font-semibold text-gray-700 mb-3">Saturday Week-Offs</p>
-          <div className="grid grid-cols-5 gap-2">
-            {[1,2,3,4,5].map(n => (
-              <button key={n} onClick={() => toggleSat(n)}
-                className={`py-2 rounded-lg text-sm font-medium border-2 transition
-                  ${wos.includes(n) ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'}`}>
-                {['1st','2nd','3rd','4th','5th'][n-1]}
-              </button>
-            ))}
+          {/* Saturdays */}
+          <div>
+            <p className="text-xs font-medium text-gray-500 mb-2">Week-off Saturdays</p>
+            <div className="grid grid-cols-5 gap-2">
+              {[1,2,3,4,5].map(n => (
+                <button key={n} onClick={() => toggleSat(n)}
+                  className={`py-1.5 rounded-lg text-xs font-medium border-2 transition
+                    ${wos.includes(n) ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'}`}>
+                  {['1st','2nd','3rd','4th','5th'][n-1]}
+                </button>
+              ))}
+            </div>
           </div>
-          <p className="text-xs text-gray-400 mt-2">5th Saturday may not exist every month.</p>
         </div>
 
-        {/* Holidays */}
-        <div>
-          <p className="text-sm font-semibold text-gray-700 mb-3">Holidays This Month</p>
-
-          {/* Add holiday */}
+        {/* ── Holidays ─────────────────────────────────────── */}
+        <div className="border-t border-gray-100 pt-5">
+          <p className="text-sm font-semibold text-gray-800 mb-3">Holidays</p>
           <div className="flex gap-2 mb-3">
             <select value={holDay} onChange={e => setHolDay(e.target.value)}
               className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm w-20">
@@ -264,41 +392,30 @@ function SettingsModal({ yearMonth, year, month, settings, onSave, onClose }) {
             <input value={holName} onChange={e => setHolName(e.target.value)}
               placeholder="Holiday name (e.g. Diwali)"
               className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm"
-              onKeyDown={e => e.key === 'Enter' && addHoliday()}
-            />
+              onKeyDown={e => e.key === 'Enter' && addHoliday()} />
             <button onClick={addHoliday} disabled={!holDay || !holName.trim()}
               className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white text-sm font-semibold rounded-lg transition">
               + Add
             </button>
           </div>
-
-          {/* Holiday list */}
           {holidays.length === 0 ? (
             <p className="text-xs text-gray-400 text-center py-3 border border-dashed border-gray-200 rounded-lg">
               No holidays added for this month
             </p>
           ) : (
-            <div className="space-y-1.5 max-h-40 overflow-y-auto">
+            <div className="space-y-1.5 max-h-36 overflow-y-auto">
               {holidays.map(h => (
                 <div key={h.day} className="flex items-center justify-between px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg">
-                  <span className="text-sm">
-                    <strong className="text-emerald-700">{h.day}</strong>
-                    <span className="text-gray-600 ml-2">{h.name}</span>
-                  </span>
-                  <button onClick={() => removeHoliday(h.day)}
-                    className="text-red-400 hover:text-red-600 text-lg leading-none ml-2">×</button>
+                  <span className="text-sm"><strong className="text-emerald-700">{h.day}</strong><span className="text-gray-600 ml-2">{h.name}</span></span>
+                  <button onClick={() => removeHoliday(h.day)} className="text-red-400 hover:text-red-600 text-lg ml-2">×</button>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-700">
-          Settings apply only to <strong>{yearMonth}</strong>. Each month is independently configurable.
-        </div>
-
-        <button onClick={() => onSave({ weekOffSaturdays: wos, allSundaysOff: sunOff, holidays })}
-          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-lg text-sm transition">
+        <button onClick={saveAll}
+          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-lg text-sm transition">
           Save Settings
         </button>
       </div>
