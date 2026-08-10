@@ -28,6 +28,34 @@ function isLoggedIn() {
   return typeof window !== 'undefined' && localStorage.getItem(SESSION_KEY) === 'true';
 }
 
+// ─── Icons ───────────────────────────────────────────────────────────────────
+
+const IC = (d, extra = '') => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="16" height="16" className={`inline-block flex-shrink-0 ${extra}`}>
+    <path fillRule="evenodd" d={d} clipRule="evenodd" />
+  </svg>
+);
+const IC2 = (d1, d2) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="16" height="16" className="inline-block flex-shrink-0">
+    <path d={d1} /><path fillRule="evenodd" d={d2} clipRule="evenodd" />
+  </svg>
+);
+
+const IconCog      = () => IC('M7.84 1.804A1 1 0 0 1 8.82 1h2.36a1 1 0 0 1 .98.804l.331 1.652a6.993 6.993 0 0 1 1.929 1.115l1.598-.54a1 1 0 0 1 1.186.447l1.18 2.044a1 1 0 0 1-.205 1.251l-1.267 1.113a7.047 7.047 0 0 1 0 2.228l1.267 1.113a1 1 0 0 1 .206 1.25l-1.18 2.045a1 1 0 0 1-1.187.447l-1.598-.54a6.993 6.993 0 0 1-1.929 1.115l-.33 1.652a1 1 0 0 1-.98.804H8.82a1 1 0 0 1-.98-.804l-.331-1.652a6.993 6.993 0 0 1-1.929-1.115l-1.598.54a1 1 0 0 1-1.186-.447l-1.18-2.044a1 1 0 0 1 .205-1.251l1.267-1.114a7.05 7.05 0 0 1 0-2.227L1.821 7.773a1 1 0 0 1-.206-1.25l1.18-2.045a1 1 0 0 1 1.187-.447l1.598.54A6.993 6.993 0 0 1 7.51 3.456l.33-1.652ZM10 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z');
+const IconRupee    = () => IC('M10.75 10.818v2.614A3.25 3.25 0 0 0 13 10.25v-.268a2.25 2.25 0 0 0-2.25-2.25h-3a.75.75 0 0 1 0-1.5h4.5a.75.75 0 0 0 0-1.5h-1.5V3.75a.75.75 0 0 0-1.5 0v.75H7.5a.75.75 0 0 0 0 1.5h.25A2.25 2.25 0 0 0 5.5 8.25v.268A3.25 3.25 0 0 0 7.75 10.5a.75.75 0 0 1 .75.75v2.614A3.25 3.25 0 0 1 6.5 11.5v-1.25a.75.75 0 0 0-1.5 0V11.5a4.75 4.75 0 0 0 4.75 4.75 4.75 4.75 0 0 0 4.75-4.75v-1.25a.75.75 0 0 0-1.5 0V11.5a3.25 3.25 0 0 1-1.75 2.932V11.57a.75.75 0 0 0-.75-.75 1.75 1.75 0 0 1-1.75-1.75v-.268a.75.75 0 0 1 .75-.75h3a3.75 3.75 0 0 1 3.75 3.75v.268a4.75 4.75 0 0 1-4.75 4.75 4.75 4.75 0 0 1-4.75-4.75v-.268Z');
+const IconDownload = () => IC('M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75ZM3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z');
+const IconUser     = () => IC('M10 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM3.465 14.493a1.23 1.23 0 0 0 .41 1.412A9.957 9.957 0 0 0 10 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 0 0-13.074.003Z');
+const IconUsers    = () => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="16" height="16" className="inline-block flex-shrink-0"><path d="M7 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM14.5 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM1.615 16.428a1.224 1.224 0 0 1-.569-1.175 6.002 6.002 0 0 1 11.908 0c.058.467-.172.92-.57 1.174A9.953 9.953 0 0 1 7 18a9.953 9.953 0 0 1-5.385-1.572ZM14.5 16h-.106c.07-.297.088-.611.048-.933a7.47 7.47 0 0 0-1.588-3.755 4.502 4.502 0 0 1 5.874 2.636.818.818 0 0 1-.36.98A7.465 7.465 0 0 1 14.5 16Z" /></svg>;
+const IconTable    = () => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="16" height="16" className="inline-block flex-shrink-0"><path fillRule="evenodd" d="M.99 5.24A2.25 2.25 0 0 1 3.25 3h13.5A2.25 2.25 0 0 1 19 5.25l.01 9.5A2.25 2.25 0 0 1 16.76 17H3.26A2.272 2.272 0 0 1 1 14.74l-.01-9.5Zm8.26 9.52v-.625a.75.75 0 0 0-.75-.75H3.25a.75.75 0 0 0-.75.75v.615c0 .414.336.75.75.75h5a.75.75 0 0 0 .75-.74Zm1.5 0a.75.75 0 0 0 .75.75h5a.75.75 0 0 0 .75-.75v-.615a.75.75 0 0 0-.75-.75H11.5a.75.75 0 0 0-.75.75v.615Zm6.5-6.77H3.25a.75.75 0 0 0-.75.75v.51c0 .414.336.75.75.75h14a.75.75 0 0 0 .75-.75v-.51a.75.75 0 0 0-.75-.75Z" clipRule="evenodd" /></svg>;
+const IconPencil   = () => IC('M2.695 14.763l-1.262 3.154a.5.5 0 0 0 .65.65l3.155-1.262a4 4 0 0 0 1.343-.885L17.5 5.5a2.121 2.121 0 0 0-3-3L3.58 13.42a4 4 0 0 0-.885 1.343Z');
+const IconTrash    = () => IC('M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z');
+const IconKey      = () => IC('M15.98 1.804a1 1 0 0 0-1.96 0l-.24 1.192a1 1 0 0 1-.784.785l-1.192.238a1 1 0 0 0 0 1.962l1.192.238a1 1 0 0 1 .785.785l.238 1.192a1 1 0 0 0 1.962 0l.238-1.192a1 1 0 0 1 .785-.785l1.192-.238a1 1 0 0 0 0-1.962l-1.192-.238a1 1 0 0 1-.785-.785L15.98 1.804ZM11 9a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM7.75 15.75a.75.75 0 0 0 0 1.5h4.5a.75.75 0 0 0 0-1.5h-4.5ZM4.75 7a.75.75 0 0 0 0 1.5h1.146a6.493 6.493 0 0 0-.35 2.13A6.5 6.5 0 0 0 9 16.963V18a.75.75 0 0 0 1.5 0v-1.037A6.5 6.5 0 0 0 14.454 10.63a6.493 6.493 0 0 0-.35-2.13H15.25a.75.75 0 0 0 0-1.5h-10.5Z');
+const IconLogout   = () => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="16" height="16" className="inline-block flex-shrink-0"><path fillRule="evenodd" d="M3 4.25A2.25 2.25 0 0 1 5.25 2h5.5A2.25 2.25 0 0 1 13 4.25v2a.75.75 0 0 1-1.5 0v-2a.75.75 0 0 0-.75-.75h-5.5a.75.75 0 0 0-.75.75v11.5c0 .414.336.75.75.75h5.5a.75.75 0 0 0 .75-.75v-2a.75.75 0 0 1 1.5 0v2A2.25 2.25 0 0 1 10.75 18h-5.5A2.25 2.25 0 0 1 3 15.75V4.25Z" clipRule="evenodd" /><path fillRule="evenodd" d="M6 10a.75.75 0 0 1 .75-.75h9.546l-1.048-.943a.75.75 0 1 1 1.004-1.114l2.5 2.25a.75.75 0 0 1 0 1.114l-2.5 2.25a.75.75 0 1 1-1.004-1.114l1.048-.943H6.75A.75.75 0 0 1 6 10Z" clipRule="evenodd" /></svg>;
+const IconEye      = () => IC('M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41Z');
+const IconEyeOff   = () => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="16" height="16" className="inline-block flex-shrink-0"><path fillRule="evenodd" d="M3.28 2.22a.75.75 0 0 0-1.06 1.06l14.5 14.5a.75.75 0 1 0 1.06-1.06l-1.745-1.745a10.029 10.029 0 0 0 3.3-4.38 1.651 1.651 0 0 0 0-1.185A10.004 10.004 0 0 0 9.999 3a9.956 9.956 0 0 0-4.744 1.194L3.28 2.22ZM7.752 6.69l1.092 1.092a2.5 2.5 0 0 1 3.374 3.373l1.091 1.092a4 4 0 0 0-5.557-5.557Z" clipRule="evenodd" /><path d="M10.748 13.93l2.523 2.523a10.285 10.285 0 0 1-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 0 1 0-1.185A10.033 10.033 0 0 1 5.47 5.948L6.53 7.008A8.503 8.503 0 0 0 2.53 10c1.445 3.223 4.621 5.5 8.47 5.5.02 0 .042 0 .063-.001l-.315-.315-.315-.315a2.501 2.501 0 0 1-.315.061Z" /></svg>;
+const IconPlus     = () => IC('M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z');
+const IconCheck    = () => IC('M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z');
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
@@ -111,7 +139,7 @@ function LoginPage({ onLogin }) {
               />
               <button type="button" onClick={() => setShow(s => !s)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg">
-                {show ? '🙈' : '👁️'}
+                {show ? <IconEyeOff /> : <IconEye />}
               </button>
             </div>
           </div>
@@ -493,7 +521,7 @@ function DownloadModal({ employees, year, month, attendance, settings, onClose }
         </p>
         <button onClick={() => handle('attendance')} disabled={loading}
           className="w-full flex items-center gap-3 px-4 py-3 border-2 border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 rounded-xl text-left transition disabled:opacity-50">
-          <span className="text-2xl">📋</span>
+          <span className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600 flex-shrink-0"><IconTable /></span>
           <div>
             <p className="font-semibold text-gray-800 text-sm">Attendance Sheet Only</p>
             <p className="text-xs text-gray-500">Day-wise attendance for all employees</p>
@@ -501,7 +529,7 @@ function DownloadModal({ employees, year, month, attendance, settings, onClose }
         </button>
         <button onClick={() => handle('both')} disabled={loading}
           className="w-full flex items-center gap-3 px-4 py-3 border-2 border-gray-200 hover:border-green-300 hover:bg-green-50 rounded-xl text-left transition disabled:opacity-50">
-          <span className="text-2xl">📊</span>
+          <span className="w-9 h-9 rounded-lg bg-green-100 flex items-center justify-center text-green-600 flex-shrink-0"><IconRupee /></span>
           <div>
             <p className="font-semibold text-gray-800 text-sm">Attendance + Salary Sheet</p>
             <p className="text-xs text-gray-500">Includes salary breakdown with deductions</p>
@@ -529,7 +557,7 @@ function ChangePasswordModal({ onClose }) {
     if (form.newPass.length < 6) { setMsg('New password must be at least 6 characters.'); return; }
     if (form.newPass !== form.confirm) { setMsg('Passwords do not match.'); return; }
     localStorage.setItem(AUTH_KEY, JSON.stringify({ id: form.id, password: form.newPass }));
-    setMsg('✓ Password changed successfully!');
+    setMsg('Password changed successfully!');
   };
 
   return (
@@ -556,7 +584,9 @@ function ChangePasswordModal({ onClose }) {
             value={form.confirm} onChange={e => set('confirm', e.target.value)} />
         </div>
         {msg && (
-          <p className={`text-sm font-medium ${msg.startsWith('✓') ? 'text-green-600' : 'text-red-600'}`}>{msg}</p>
+          <p className={`text-sm font-medium flex items-center gap-1.5 ${msg.startsWith('Password') ? 'text-green-600' : 'text-red-600'}`}>
+            {msg.startsWith('Password') && <IconCheck />}{msg}
+          </p>
         )}
         <button onClick={handle}
           className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-lg text-sm transition">
@@ -569,15 +599,99 @@ function ChangePasswordModal({ onClose }) {
 
 // ─── Employees Tab View ───────────────────────────────────────────────────────
 
-function EmployeesView({ employees, onAdd, onEdit, onDelete }) {
-  const [filter, setFilter] = useState('all');
+function EmployeeCard({ emp, onEdit, onDelete }) {
+  const [confirming, setConfirming] = useState(false);
   const todayStr = new Date().toISOString().split('T')[0];
 
-  const getStatus = (emp) => {
-    if (!emp.resignedDate) return { label: 'Active', cls: 'bg-green-100 text-green-700' };
-    if (emp.resignedDate >= todayStr) return { label: 'Notice Period', cls: 'bg-amber-100 text-amber-700' };
-    return { label: 'Terminated', cls: 'bg-red-100 text-red-700' };
-  };
+  const status = !emp.resignedDate
+    ? { label: 'Active',        cls: 'bg-green-100 text-green-700'  }
+    : emp.resignedDate >= todayStr
+    ? { label: 'Notice Period', cls: 'bg-amber-100 text-amber-700'  }
+    : { label: 'Terminated',    cls: 'bg-red-100 text-red-700'      };
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition p-5 flex flex-col">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-black text-lg flex-shrink-0">
+            {emp.name.charAt(0).toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <p className="font-bold text-gray-800 truncate">{emp.name}</p>
+            <p className="text-xs text-gray-400 truncate">{emp.designation || '—'}</p>
+          </div>
+        </div>
+        <span className={`text-xs px-2 py-1 rounded-full font-semibold flex-shrink-0 ml-2 ${status.cls}`}>
+          {status.label}
+        </span>
+      </div>
+
+      <div className="flex-1 space-y-2 text-sm mb-4">
+        <div className="flex justify-between items-center">
+          <span className="text-gray-400">Monthly Salary</span>
+          <span className="font-bold text-gray-800">
+            {emp.salary === 0 ? '₹0 (No pay)' : `₹${emp.salary.toLocaleString('en-IN')}`}
+          </span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-gray-400">Joined</span>
+          <span className="text-gray-600">
+            {emp.joiningDate
+              ? new Date(emp.joiningDate + 'T00:00:00').toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })
+              : '—'}
+          </span>
+        </div>
+        {emp.resignedDate && (
+          <div className="flex justify-between items-center">
+            <span className="text-gray-400">Resigned</span>
+            <span className="text-red-600 font-medium">
+              {new Date(emp.resignedDate + 'T00:00:00').toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {emp.resignedDate && (
+        <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-2 py-1.5 mb-3">
+          Hidden from attendance from{' '}
+          {new Date(new Date(emp.resignedDate + 'T00:00:00').getFullYear(),
+                    new Date(emp.resignedDate + 'T00:00:00').getMonth() + 1, 1)
+            .toLocaleDateString('en-IN', { month:'long', year:'numeric' })} onwards
+        </p>
+      )}
+
+      {confirming ? (
+        <div className="mt-auto bg-red-50 rounded-lg p-3 border border-red-100">
+          <p className="text-xs text-red-700 font-semibold mb-2">Remove this employee permanently?</p>
+          <div className="flex gap-2">
+            <button onClick={() => onDelete(emp.id)}
+              className="flex-1 py-1.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-xs transition">
+              Yes, Remove
+            </button>
+            <button onClick={() => setConfirming(false)}
+              className="flex-1 py-1.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 font-semibold rounded-lg text-xs transition">
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex gap-2 mt-auto">
+          <button onClick={() => onEdit(emp)}
+            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold rounded-lg text-xs transition">
+            <IconPencil /> Edit
+          </button>
+          <button onClick={() => setConfirming(true)}
+            className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-lg text-xs transition flex items-center">
+            <IconTrash />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EmployeesView({ employees, onAdd, onEdit, onDelete }) {
+  const [filter, setFilter] = useState('all');
 
   const filtered = employees.filter(e => {
     if (filter === 'active')     return !e.resignedDate;
@@ -591,7 +705,6 @@ function EmployeesView({ employees, onAdd, onEdit, onDelete }) {
   return (
     <div className="flex-1 p-4 max-w-screen-2xl mx-auto w-full">
 
-      {/* Header */}
       <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
         <div>
           <h2 className="text-xl font-bold text-gray-800">Employee Management</h2>
@@ -600,12 +713,11 @@ function EmployeesView({ employees, onAdd, onEdit, onDelete }) {
           </p>
         </div>
         <button onClick={onAdd}
-          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-sm transition">
-          + Add Employee
+          className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-sm transition">
+          <IconPlus /> Add Employee
         </button>
       </div>
 
-      {/* Filter pills */}
       <div className="flex gap-2 mb-4">
         {[['all','All Employees'],['active','Active'],['terminated','Terminated']].map(([val, label]) => (
           <button key={val} onClick={() => setFilter(val)}
@@ -616,92 +728,22 @@ function EmployeesView({ employees, onAdd, onEdit, onDelete }) {
         ))}
       </div>
 
-      {/* Cards grid */}
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center text-2xl">👤</div>
+          <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-400"><IconUser /></div>
           <p className="text-gray-400 font-medium">No employees found</p>
           {filter === 'all' && (
             <button onClick={onAdd}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition">
-              + Add First Employee
+              className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition">
+              <IconPlus /> Add First Employee
             </button>
           )}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filtered.map(emp => {
-            const status = getStatus(emp);
-            return (
-              <div key={emp.id}
-                className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition p-5 flex flex-col">
-
-                {/* Top row */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-black text-lg flex-shrink-0">
-                      {emp.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-bold text-gray-800 truncate">{emp.name}</p>
-                      <p className="text-xs text-gray-400 truncate">{emp.designation || '—'}</p>
-                    </div>
-                  </div>
-                  <span className={`text-xs px-2 py-1 rounded-full font-semibold flex-shrink-0 ml-2 ${status.cls}`}>
-                    {status.label}
-                  </span>
-                </div>
-
-                {/* Details */}
-                <div className="flex-1 space-y-2 text-sm mb-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-400">Monthly Salary</span>
-                    <span className="font-bold text-gray-800">
-                      {emp.salary === 0 ? '₹0 (No pay)' : `₹${emp.salary.toLocaleString('en-IN')}`}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-400">Joined</span>
-                    <span className="text-gray-600">
-                      {emp.joiningDate
-                        ? new Date(emp.joiningDate + 'T00:00:00').toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })
-                        : '—'}
-                    </span>
-                  </div>
-                  {emp.resignedDate && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Resigned</span>
-                      <span className="text-red-600 font-medium">
-                        {new Date(emp.resignedDate + 'T00:00:00').toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Note for terminated */}
-                {emp.resignedDate && (
-                  <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-2 py-1.5 mb-3">
-                    Hidden from attendance from{' '}
-                    {new Date(new Date(emp.resignedDate + 'T00:00:00').getFullYear(),
-                              new Date(emp.resignedDate + 'T00:00:00').getMonth() + 1, 1)
-                      .toLocaleDateString('en-IN', { month:'long', year:'numeric' })} onwards
-                  </p>
-                )}
-
-                {/* Actions */}
-                <div className="flex gap-2 mt-auto">
-                  <button onClick={() => onEdit(emp)}
-                    className="flex-1 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold rounded-lg text-xs transition">
-                    ✏️ Edit
-                  </button>
-                  <button onClick={() => onDelete(emp.id)}
-                    className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-lg text-xs transition">
-                    🗑️
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+          {filtered.map(emp => (
+            <EmployeeCard key={emp.id} emp={emp} onEdit={onEdit} onDelete={onDelete} />
+          ))}
         </div>
       )}
     </div>
@@ -823,30 +865,30 @@ function AttendanceApp() {
           <div className="flex gap-2 flex-wrap">
             <button onClick={() => { setModal('addEmp'); setEditingEmp(null); }}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
-              + Add Employee
+              <IconPlus /> Add Employee
             </button>
             <button onClick={() => setModal('settings')}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg transition">
-              ⚙️ Settings
+              <IconCog /> Settings
             </button>
             <button onClick={() => setModal('salary')}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg transition">
-              💰 Salary
+              <IconRupee /> Salary
             </button>
             <button onClick={() => setModal('download')}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition">
-              ⬇ Download
+              <IconDownload /> Download
             </button>
             {/* User menu */}
             <div className="relative group">
               <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg transition">
-                👤 Admin ▾
+                <IconUser /> Admin ▾
               </button>
               <div className="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-lg py-1 w-44 hidden group-hover:block z-50">
                 <button onClick={() => setModal('changePass')}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">🔑 Change Password</button>
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"><IconKey /> Change Password</button>
                 <button onClick={logout}
-                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">🚪 Logout</button>
+                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"><IconLogout /> Logout</button>
               </div>
             </div>
           </div>
@@ -856,13 +898,13 @@ function AttendanceApp() {
       {/* ── Tabs ───────────────────────────────────────────────── */}
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-screen-2xl mx-auto px-4 flex gap-0">
-          {[['attendance','📋 Attendance'],['employees','👥 Employees']].map(([t, label]) => (
+          {[['attendance', <IconTable />, 'Attendance'], ['employees', <IconUsers />, 'Employees']].map(([t, icon, label]) => (
             <button key={t} onClick={() => setTab(t)}
-              className={`px-5 py-3 text-sm font-semibold border-b-2 transition
+              className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition
                 ${tab === t
                   ? 'border-indigo-600 text-indigo-700'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-200'}`}>
-              {label}
+              {icon}{label}
             </button>
           ))}
         </div>
@@ -906,11 +948,11 @@ function AttendanceApp() {
       {tab === 'attendance' && <main className="flex-1 p-4 max-w-screen-2xl mx-auto w-full">
         {activeEmps.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center text-3xl">👥</div>
+            <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-400"><IconUsers /></div>
             <p className="text-gray-500 font-medium">No active employees for this month</p>
             <button onClick={() => setModal('addEmp')}
-              className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition">
-              + Add First Employee
+              className="flex items-center gap-1.5 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition">
+              <IconPlus /> Add First Employee
             </button>
           </div>
         ) : (
