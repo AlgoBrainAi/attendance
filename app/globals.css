@@ -33,6 +33,15 @@ body {
   font-size: 9px;
 }
 
+.att-cell.holiday {
+  background: #ecfdf5;
+  color: #059669;
+  cursor: default;
+  font-size: 9px;
+  font-weight: 600;
+  border: 1px solid #6ee7b7;
+}
+
 .att-cell.inactive {
   background: #f8fafc;
   color: #cbd5e1;

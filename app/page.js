@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  getMonthDays, isWeekOff, isDayActiveForEmployee, isEmployeeActiveInMonth,
+  getMonthDays, isWeekOff, isHoliday, getHolidayName, isDayOff,
+  isDayActiveForEmployee, isEmployeeActiveInMonth,
   formatYearMonth, getPrevMonth, getNextMonth, MONTH_NAMES, DAY_SHORT
 } from '../lib/dateUtils';
 import {
@@ -12,30 +13,39 @@ import {
 import { STATUS_CYCLE, STATUS_LABELS, STATUS_STYLE, getNextStatus, calculateSalary } from '../lib/salaryCalc';
 import { downloadReport } from '../lib/exportUtils';
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+// ─── Auth helpers ────────────────────────────────────────────────────────────
 
-function uid() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2);
+const AUTH_KEY    = 'att_auth';
+const SESSION_KEY = 'att_session';
+
+function getCredentials() {
+  try { return JSON.parse(localStorage.getItem(AUTH_KEY)) || { id: 'admin', password: 'admin@123' }; }
+  catch { return { id: 'admin', password: 'admin@123' }; }
 }
 
+function isLoggedIn() {
+  return typeof window !== 'undefined' && localStorage.getItem(SESSION_KEY) === 'true';
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 function fmt(n) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(n);
 }
 
-// ─── Modal wrapper ───────────────────────────────────────────────────────────
+// ─── Modal ───────────────────────────────────────────────────────────────────
 
 function Modal({ title, onClose, children, wide }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-         style={{ background: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(4px)' }}>
+         style={{ background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)' }}>
       <div className={`bg-white rounded-2xl shadow-2xl flex flex-col ${wide ? 'w-full max-w-4xl' : 'w-full max-w-lg'}`}
            style={{ maxHeight: '92vh' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="text-lg font-bold text-gray-800">{title}</h2>
           <button onClick={onClose}
-            className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 text-xl leading-none">
-            ×
-          </button>
+            className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 text-xl">×</button>
         </div>
         <div className="overflow-y-auto flex-1 px-6 py-5">{children}</div>
       </div>
@@ -43,13 +53,95 @@ function Modal({ title, onClose, children, wide }) {
   );
 }
 
-// ─── Employee Modal ──────────────────────────────────────────────────────────
+// ─── Login Page ───────────────────────────────────────────────────────────────
+
+function LoginPage({ onLogin }) {
+  const [id, setId]       = useState('');
+  const [pass, setPass]   = useState('');
+  const [error, setError] = useState('');
+  const [show, setShow]   = useState(false);
+
+  const handle = (e) => {
+    e.preventDefault();
+    const creds = getCredentials();
+    if (id === creds.id && pass === creds.password) {
+      localStorage.setItem(SESSION_KEY, 'true');
+      onLogin();
+    } else {
+      setError('Invalid ID or Password. Please try again.');
+      setPass('');
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4"
+         style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)' }}>
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
+        {/* Header */}
+        <div className="px-8 pt-10 pb-6 text-center"
+             style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)' }}>
+          <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <span className="text-3xl font-black text-white">A</span>
+          </div>
+          <h1 className="text-2xl font-black text-white">AttendPro</h1>
+          <p className="text-indigo-200 text-sm mt-1">Attendance Management System</p>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handle} className="px-8 py-8 space-y-5">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Login ID</label>
+            <input
+              value={id} onChange={e => { setId(e.target.value); setError(''); }}
+              placeholder="Enter your ID"
+              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-indigo-500 outline-none transition"
+              autoComplete="username"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Password</label>
+            <div className="relative">
+              <input
+                type={show ? 'text' : 'password'}
+                value={pass} onChange={e => { setPass(e.target.value); setError(''); }}
+                placeholder="Enter your password"
+                className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm font-medium focus:border-indigo-500 outline-none transition pr-12"
+                autoComplete="current-password"
+              />
+              <button type="button" onClick={() => setShow(s => !s)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg">
+                {show ? '🙈' : '👁️'}
+              </button>
+            </div>
+          </div>
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600 font-medium">
+              {error}
+            </div>
+          )}
+
+          <button type="submit" disabled={!id || !pass}
+            className="w-full py-3 rounded-xl font-bold text-white text-sm disabled:opacity-40 transition"
+            style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}>
+            Login →
+          </button>
+
+          <p className="text-xs text-center text-gray-400 pt-1">
+            Default: <strong>admin</strong> / <strong>admin@123</strong>
+          </p>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── Employee Modal ───────────────────────────────────────────────────────────
 
 function EmployeeModal({ initial, onSave, onClose, onDelete }) {
   const [form, setForm] = useState(initial || {
     name: '', designation: '', salary: '', joiningDate: '', resignedDate: ''
   });
-
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const valid = form.name.trim() && Number(form.salary) > 0 && form.joiningDate;
 
@@ -80,9 +172,7 @@ function EmployeeModal({ initial, onSave, onClose, onDelete }) {
           <label className="block text-sm font-medium text-gray-700 mb-1">Resigned / Terminated Date</label>
           <input type="date" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
             value={form.resignedDate || ''} onChange={e => set('resignedDate', e.target.value)} />
-          <p className="text-xs text-gray-400 mt-1">
-            Employee will still appear in the month they resigned, then auto-hidden from next month.
-          </p>
+          <p className="text-xs text-gray-400 mt-1">Employee stays visible for their resignation month, then auto-hides.</p>
         </div>
         <div className="flex gap-3 pt-2">
           <button disabled={!valid}
@@ -102,49 +192,112 @@ function EmployeeModal({ initial, onSave, onClose, onDelete }) {
   );
 }
 
-// ─── Week Off Settings Modal ─────────────────────────────────────────────────
+// ─── Settings Modal (Week-off + Holidays) ────────────────────────────────────
 
-function WeekOffModal({ yearMonth, settings, onSave, onClose }) {
-  const [wos, setWos] = useState(settings.weekOffSaturdays || [1, 3]);
+function SettingsModal({ yearMonth, year, month, settings, onSave, onClose }) {
+  const [wos,        setWos]        = useState(settings.weekOffSaturdays ?? [1, 3]);
+  const [sunOff,     setSunOff]     = useState(settings.allSundaysOff ?? true);
+  const [holidays,   setHolidays]   = useState(settings.holidays ?? []);
+  const [holDay,     setHolDay]     = useState('');
+  const [holName,    setHolName]    = useState('');
 
-  const toggle = (n) => setWos(prev =>
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const toggleSat = (n) => setWos(prev =>
     prev.includes(n) ? prev.filter(x => x !== n) : [...prev, n].sort()
   );
 
+  const addHoliday = () => {
+    const d = Number(holDay);
+    if (!d || !holName.trim()) return;
+    if (holidays.find(h => h.day === d)) return;
+    setHolidays(prev => [...prev, { day: d, name: holName.trim() }].sort((a, b) => a.day - b.day));
+    setHolDay(''); setHolName('');
+  };
+
+  const removeHoliday = (day) => setHolidays(prev => prev.filter(h => h.day !== day));
+
   return (
-    <Modal title={`Week-Off Settings — ${yearMonth}`} onClose={onClose}>
-      <div className="space-y-5">
+    <Modal title={`Settings — ${yearMonth}`} onClose={onClose}>
+      <div className="space-y-6">
+
+        {/* Sundays */}
         <div>
           <p className="text-sm font-semibold text-gray-700 mb-3">Sundays</p>
-          <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg">
-            <span className="w-4 h-4 rounded bg-gray-300 inline-block"></span>
-            <span className="text-sm text-gray-600">All Sundays are always week-off</span>
-          </div>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <div onClick={() => setSunOff(v => !v)}
+              className={`w-11 h-6 rounded-full transition-colors relative ${sunOff ? 'bg-indigo-500' : 'bg-gray-200'}`}>
+              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${sunOff ? 'left-6' : 'left-1'}`} />
+            </div>
+            <span className="text-sm text-gray-700">All Sundays are week-off</span>
+          </label>
         </div>
 
+        {/* Saturdays */}
         <div>
-          <p className="text-sm font-semibold text-gray-700 mb-3">Saturdays — select which are week-off</p>
+          <p className="text-sm font-semibold text-gray-700 mb-3">Saturday Week-Offs</p>
           <div className="grid grid-cols-5 gap-2">
             {[1,2,3,4,5].map(n => (
-              <button key={n} onClick={() => toggle(n)}
+              <button key={n} onClick={() => toggleSat(n)}
                 className={`py-2 rounded-lg text-sm font-medium border-2 transition
-                  ${wos.includes(n)
-                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                    : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'}`}>
-                {n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : n === 4 ? '4th' : '5th'}
+                  ${wos.includes(n) ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'}`}>
+                {['1st','2nd','3rd','4th','5th'][n-1]}
               </button>
             ))}
           </div>
-          <p className="text-xs text-gray-400 mt-2">
-            Default: 1st &amp; 3rd Saturday off. 5th Saturday may not exist every month.
-          </p>
+          <p className="text-xs text-gray-400 mt-2">5th Saturday may not exist every month.</p>
+        </div>
+
+        {/* Holidays */}
+        <div>
+          <p className="text-sm font-semibold text-gray-700 mb-3">Holidays This Month</p>
+
+          {/* Add holiday */}
+          <div className="flex gap-2 mb-3">
+            <select value={holDay} onChange={e => setHolDay(e.target.value)}
+              className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm w-20">
+              <option value="">Day</option>
+              {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(d => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+            <input value={holName} onChange={e => setHolName(e.target.value)}
+              placeholder="Holiday name (e.g. Diwali)"
+              className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm"
+              onKeyDown={e => e.key === 'Enter' && addHoliday()}
+            />
+            <button onClick={addHoliday} disabled={!holDay || !holName.trim()}
+              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white text-sm font-semibold rounded-lg transition">
+              + Add
+            </button>
+          </div>
+
+          {/* Holiday list */}
+          {holidays.length === 0 ? (
+            <p className="text-xs text-gray-400 text-center py-3 border border-dashed border-gray-200 rounded-lg">
+              No holidays added for this month
+            </p>
+          ) : (
+            <div className="space-y-1.5 max-h-40 overflow-y-auto">
+              {holidays.map(h => (
+                <div key={h.day} className="flex items-center justify-between px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg">
+                  <span className="text-sm">
+                    <strong className="text-emerald-700">{h.day}</strong>
+                    <span className="text-gray-600 ml-2">{h.name}</span>
+                  </span>
+                  <button onClick={() => removeHoliday(h.day)}
+                    className="text-red-400 hover:text-red-600 text-lg leading-none ml-2">×</button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-700">
-          This setting applies only to <strong>{yearMonth}</strong>. Each month can have independent week-off configuration.
+          Settings apply only to <strong>{yearMonth}</strong>. Each month is independently configurable.
         </div>
 
-        <button onClick={() => onSave({ weekOffSaturdays: wos })}
+        <button onClick={() => onSave({ weekOffSaturdays: wos, allSundaysOff: sunOff, holidays })}
           className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-lg text-sm transition">
           Save Settings
         </button>
@@ -153,11 +306,9 @@ function WeekOffModal({ yearMonth, settings, onSave, onClose }) {
   );
 }
 
-// ─── Salary View Modal ───────────────────────────────────────────────────────
+// ─── Salary Modal ─────────────────────────────────────────────────────────────
 
 function SalaryModal({ employees, year, month, attendance, settings, onClose }) {
-  const ym = formatYearMonth(year, month);
-
   return (
     <Modal title={`Salary Summary — ${MONTH_NAMES[month]} ${year}`} onClose={onClose} wide>
       <div className="overflow-x-auto">
@@ -179,16 +330,16 @@ function SalaryModal({ employees, year, month, attendance, settings, onClose }) 
                     {emp.name}
                     {emp.designation && <span className="text-gray-400 ml-1">· {emp.designation}</span>}
                   </td>
-                  <td className="px-3 py-2 text-gray-600">{fmt(emp.salary)}</td>
-                  <td className="px-3 py-2 text-gray-600">{c.workingDays}</td>
-                  <td className="px-3 py-2 text-green-700 font-medium">{c.P}</td>
-                  <td className="px-3 py-2 text-blue-700">{c.WFH}</td>
-                  <td className="px-3 py-2 text-red-700">{c.A}</td>
-                  <td className="px-3 py-2 text-amber-700">{c.L}</td>
-                  <td className="px-3 py-2 text-purple-700">{c.H}</td>
+                  <td className="px-3 py-2">{fmt(emp.salary)}</td>
+                  <td className="px-3 py-2">{c.workingDays}</td>
+                  <td className="px-3 py-2 text-green-700 font-bold">{c.P || '—'}</td>
+                  <td className="px-3 py-2 text-blue-700">{c.WFH || '—'}</td>
+                  <td className="px-3 py-2 text-red-700">{c.A || '—'}</td>
+                  <td className="px-3 py-2 text-amber-700">{c.L || '—'}</td>
+                  <td className="px-3 py-2 text-purple-700">{c.H || '—'}</td>
                   <td className="px-3 py-2 text-indigo-700">{c.paidLeaves}</td>
                   <td className="px-3 py-2 text-red-600">{c.unpaidLeaves}</td>
-                  <td className="px-3 py-2 text-gray-600">{fmt(c.perDay)}</td>
+                  <td className="px-3 py-2">{fmt(c.perDay)}</td>
                   <td className="px-3 py-2 font-bold text-gray-800">{fmt(c.netSalary)}</td>
                   <td className="px-3 py-2 text-red-600">{c.deduction > 0 ? `-${fmt(c.deduction)}` : '—'}</td>
                 </tr>
@@ -196,36 +347,27 @@ function SalaryModal({ employees, year, month, attendance, settings, onClose }) 
             })}
           </tbody>
         </table>
-        {employees.length === 0 && (
-          <p className="text-center py-8 text-gray-400">No active employees this month.</p>
-        )}
+        {employees.length === 0 && <p className="text-center py-8 text-gray-400">No active employees this month.</p>}
       </div>
-
       <div className="mt-5 bg-indigo-50 rounded-xl p-4 text-xs text-indigo-800 space-y-1">
-        <p className="font-semibold">How salary is calculated:</p>
-        <p>• Per Day = Monthly Salary ÷ Total Working Days in Month</p>
-        <p>• Paid Leave Quota: 1 per month; increases to 2 if employee had <strong>zero</strong> A/L in previous month</p>
+        <p className="font-semibold">Salary formula:</p>
+        <p>• Per Day = Monthly Salary ÷ Working Days (excludes Sundays, week-off Saturdays, holidays)</p>
+        <p>• Paid Leave Quota: 2 if previous month had zero A/L, otherwise 1</p>
         <p>• Net = Per Day × (Present + WFH + Paid Leaves + Half Days × 0.5)</p>
-        <p>• Working Days = All days minus Sundays and configured week-off Saturdays</p>
       </div>
     </Modal>
   );
 }
 
-// ─── Download Modal ──────────────────────────────────────────────────────────
+// ─── Download Modal ───────────────────────────────────────────────────────────
 
 function DownloadModal({ employees, year, month, attendance, settings, onClose }) {
   const [loading, setLoading] = useState(false);
-
   const handle = async (type) => {
     setLoading(true);
-    try {
-      await downloadReport(type, employees, year, month, attendance, settings);
-    } finally {
-      setLoading(false);
-    }
+    try { await downloadReport(type, employees, year, month, attendance, settings); }
+    finally { setLoading(false); }
   };
-
   return (
     <Modal title="Download Report" onClose={onClose}>
       <div className="space-y-3">
@@ -254,9 +396,63 @@ function DownloadModal({ employees, year, month, attendance, settings, onClose }
   );
 }
 
-// ─── Main Page ───────────────────────────────────────────────────────────────
+// ─── Change Password Modal ────────────────────────────────────────────────────
 
-export default function HomePage() {
+function ChangePasswordModal({ onClose }) {
+  const [form, setForm] = useState({ id: '', oldPass: '', newPass: '', confirm: '' });
+  const [msg, setMsg] = useState('');
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const handle = () => {
+    const creds = getCredentials();
+    if (form.id !== creds.id || form.oldPass !== creds.password) {
+      setMsg('Current ID or password is incorrect.');
+      return;
+    }
+    if (form.newPass.length < 6) { setMsg('New password must be at least 6 characters.'); return; }
+    if (form.newPass !== form.confirm) { setMsg('Passwords do not match.'); return; }
+    localStorage.setItem(AUTH_KEY, JSON.stringify({ id: form.id, password: form.newPass }));
+    setMsg('✓ Password changed successfully!');
+  };
+
+  return (
+    <Modal title="Change Password" onClose={onClose}>
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Login ID</label>
+          <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+            value={form.id} onChange={e => set('id', e.target.value)} placeholder="Your login ID" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+          <input type="password" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+            value={form.oldPass} onChange={e => set('oldPass', e.target.value)} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+          <input type="password" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+            value={form.newPass} onChange={e => set('newPass', e.target.value)} placeholder="Min 6 characters" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+          <input type="password" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+            value={form.confirm} onChange={e => set('confirm', e.target.value)} />
+        </div>
+        {msg && (
+          <p className={`text-sm font-medium ${msg.startsWith('✓') ? 'text-green-600' : 'text-red-600'}`}>{msg}</p>
+        )}
+        <button onClick={handle}
+          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-lg text-sm transition">
+          Change Password
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+// ─── Main App ─────────────────────────────────────────────────────────────────
+
+function AttendanceApp() {
   const today = new Date();
   const [year,  setYear]  = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -265,75 +461,61 @@ export default function HomePage() {
   const [attendance, setAttendance] = useState({});
   const [settings,   setSettings]   = useState(DEFAULT_SETTINGS);
 
-  const [modal, setModal] = useState(null); // 'addEmp' | 'editEmp' | 'weekoff' | 'salary' | 'download'
-  const [editingEmp, setEditingEmp] = useState(null);
+  const [modal,       setModal]       = useState(null);
+  const [editingEmp,  setEditingEmp]  = useState(null);
 
   const ym = formatYearMonth(year, month);
 
-  // Load from localStorage whenever month changes
   useEffect(() => {
     setEmployees(getEmployees());
     setAttendance(getAttendance(ym));
     setSettings(getMonthSettings(ym));
   }, [ym]);
 
-  // Navigate months
   const goMonth = (dir) => {
-    const { year: ny, month: nm } = dir === -1 ? getPrevMonth(year, month) : getNextMonth(year, month);
+    const fn = dir === -1 ? getPrevMonth : getNextMonth;
+    const { year: ny, month: nm } = fn(year, month);
     setYear(ny); setMonth(nm);
   };
 
-  // Active employees for this month
   const activeEmps = employees.filter(e => isEmployeeActiveInMonth(e, year, month));
-
   const days = getMonthDays(year, month);
+  const workingCount = days.filter(d => !isDayOff(d, settings)).length;
 
-  // Click cell: cycle status
-  const handleCell = useCallback((empId, dayNum, isOff, isActive) => {
-    if (isOff || !isActive) return;
+  const handleCell = useCallback((empId, dayStr, off, active) => {
+    if (off || !active) return;
     setAttendance(prev => {
       const updated = { ...prev, [empId]: { ...(prev[empId] || {}) } };
-      const cur = updated[empId][dayNum] || '';
+      const cur  = updated[empId][dayStr] || '';
       const next = getNextStatus(cur);
-      if (next === '') delete updated[empId][dayNum];
-      else updated[empId][dayNum] = next;
+      if (next === '') delete updated[empId][dayStr];
+      else updated[empId][dayStr] = next;
       saveAttendance(ym, updated);
       return updated;
     });
   }, [ym]);
 
-  // Save employee
   const handleSaveEmp = (emp) => {
     setEmployees(prev => {
-      const exists = prev.find(e => e.id === emp.id);
-      const next = exists ? prev.map(e => e.id === emp.id ? emp : e) : [...prev, emp];
+      const next = prev.find(e => e.id === emp.id)
+        ? prev.map(e => e.id === emp.id ? emp : e)
+        : [...prev, emp];
       saveEmployees(next);
       return next;
     });
-    setModal(null);
-    setEditingEmp(null);
+    setModal(null); setEditingEmp(null);
   };
 
-  // Delete employee
   const handleDeleteEmp = (id) => {
     if (!confirm('Remove this employee? Their attendance data will be kept.')) return;
-    setEmployees(prev => {
-      const next = prev.filter(e => e.id !== id);
-      saveEmployees(next);
-      return next;
-    });
-    setModal(null);
-    setEditingEmp(null);
+    setEmployees(prev => { const n = prev.filter(e => e.id !== id); saveEmployees(n); return n; });
+    setModal(null); setEditingEmp(null);
   };
 
-  // Save week-off settings
   const handleSaveSettings = (s) => {
-    setSettings(s);
-    saveMonthSettings(ym, s);
-    setModal(null);
+    setSettings(s); saveMonthSettings(ym, s); setModal(null);
   };
 
-  // Count stats for each employee
   const getStats = (empId) => {
     const ea = attendance[empId] || {};
     const s = { P:0, A:0, WFH:0, L:0, H:0 };
@@ -341,58 +523,52 @@ export default function HomePage() {
     return s;
   };
 
-  const weekOffCount = days.filter(d => isWeekOff(d, settings)).length;
-  const workingCount = days.length - weekOffCount;
+  const logout = () => {
+    localStorage.removeItem(SESSION_KEY);
+    window.location.reload();
+  };
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: '#f8fafc' }}>
 
-      {/* ── Header ──────────────────────────────────────────────── */}
+      {/* ── Header ─────────────────────────────────────────────── */}
       <header className="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-30">
         <div className="max-w-screen-2xl mx-auto px-4 py-3 flex items-center gap-3 flex-wrap">
-
-          {/* Brand */}
           <div className="flex items-center gap-2 mr-2">
             <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-sm">A</div>
             <span className="font-bold text-gray-800 hidden sm:block">AttendPro</span>
           </div>
 
-          {/* Month navigator */}
           <div className="flex items-center gap-1 bg-gray-50 rounded-xl p-1">
             <button onClick={() => goMonth(-1)}
-              className="w-8 h-8 rounded-lg hover:bg-white hover:shadow-sm flex items-center justify-center text-gray-500 transition text-sm font-bold">
-              ‹
-            </button>
+              className="w-8 h-8 rounded-lg hover:bg-white hover:shadow-sm flex items-center justify-center text-gray-500 font-bold">‹</button>
             <span className="px-3 font-semibold text-gray-800 min-w-[140px] text-center text-sm">
               {MONTH_NAMES[month]} {year}
             </span>
             <button onClick={() => goMonth(1)}
-              className="w-8 h-8 rounded-lg hover:bg-white hover:shadow-sm flex items-center justify-center text-gray-500 transition text-sm font-bold">
-              ›
-            </button>
+              className="w-8 h-8 rounded-lg hover:bg-white hover:shadow-sm flex items-center justify-center text-gray-500 font-bold">›</button>
           </div>
 
-          {/* Info chips */}
           <div className="hidden md:flex gap-2 ml-1">
-            <span className="text-xs px-2 py-1 bg-gray-100 rounded-full text-gray-600">
-              {workingCount} working days
-            </span>
-            <span className="text-xs px-2 py-1 bg-gray-100 rounded-full text-gray-600">
-              {activeEmps.length} employees
-            </span>
+            <span className="text-xs px-2 py-1 bg-gray-100 rounded-full text-gray-600">{workingCount} working days</span>
+            <span className="text-xs px-2 py-1 bg-gray-100 rounded-full text-gray-600">{activeEmps.length} employees</span>
+            {(settings.holidays || []).length > 0 && (
+              <span className="text-xs px-2 py-1 bg-emerald-100 rounded-full text-emerald-700">
+                {settings.holidays.length} holiday{settings.holidays.length > 1 ? 's' : ''}
+              </span>
+            )}
           </div>
 
           <div className="flex-1" />
 
-          {/* Action buttons */}
           <div className="flex gap-2 flex-wrap">
             <button onClick={() => { setModal('addEmp'); setEditingEmp(null); }}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
-              <span className="text-base">+</span> Add Employee
+              + Add Employee
             </button>
-            <button onClick={() => setModal('weekoff')}
+            <button onClick={() => setModal('settings')}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg transition">
-              📅 Week Off
+              ⚙️ Settings
             </button>
             <button onClick={() => setModal('salary')}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg transition">
@@ -402,30 +578,47 @@ export default function HomePage() {
               className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition">
               ⬇ Download
             </button>
+            {/* User menu */}
+            <div className="relative group">
+              <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg transition">
+                👤 Admin ▾
+              </button>
+              <div className="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-lg py-1 w-44 hidden group-hover:block z-50">
+                <button onClick={() => setModal('changePass')}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">🔑 Change Password</button>
+                <button onClick={logout}
+                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">🚪 Logout</button>
+              </div>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* ── Legend ──────────────────────────────────────────────── */}
+      {/* ── Legend ─────────────────────────────────────────────── */}
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-screen-2xl mx-auto px-4 py-2 flex items-center gap-4 flex-wrap">
           <span className="text-xs text-gray-400 font-medium">CLICK TO CYCLE:</span>
-          {STATUS_CYCLE.filter(s => s).map(s => (
+          {STATUS_CYCLE.filter(Boolean).map(s => (
             <span key={s} className="flex items-center gap-1.5">
-              <span className={`att-cell text-xs px-1 ${STATUS_STYLE[s]}`} style={{ width: 'auto', height: 22, borderRadius: 4, padding: '0 6px' }}>
-                {s}
+              <span className={`inline-flex items-center justify-center text-xs font-bold rounded px-1.5 ${STATUS_STYLE[s]}`}
+                style={{ height: 22, minWidth: 28 }}>
+                {s === 'WFH' ? 'W' : s}
               </span>
               <span className="text-xs text-gray-500">{STATUS_LABELS[s]}</span>
             </span>
           ))}
           <span className="flex items-center gap-1.5">
-            <span className="att-cell weekoff text-xs" style={{ width: 'auto', height: 22, padding: '0 6px', borderRadius: 4 }}>WO</span>
+            <span className="att-cell weekoff inline-flex items-center justify-center" style={{ width: 'auto', height: 22, padding: '0 6px', borderRadius: 4, fontSize: 9 }}>WO</span>
             <span className="text-xs text-gray-500">Week Off</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="att-cell holiday inline-flex items-center justify-center" style={{ width: 'auto', height: 22, padding: '0 6px', borderRadius: 4, fontSize: 9 }}>HOL</span>
+            <span className="text-xs text-gray-500">Holiday</span>
           </span>
         </div>
       </div>
 
-      {/* ── Attendance Grid ──────────────────────────────────────── */}
+      {/* ── Grid ───────────────────────────────────────────────── */}
       <main className="flex-1 p-4 max-w-screen-2xl mx-auto w-full">
         {activeEmps.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4">
@@ -441,54 +634,37 @@ export default function HomePage() {
             <div className="overflow-x-auto">
               <table className="border-collapse" style={{ minWidth: 'max-content' }}>
                 <thead>
-                  {/* Month header row with day numbers */}
                   <tr className="bg-gray-50">
-                    {/* Employee name + designation header */}
                     <th className="sticky-col bg-gray-50 px-4 py-3 text-left" style={{ minWidth: 220, zIndex: 20 }}>
                       <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Employee</span>
                     </th>
-
                     {days.map(d => {
-                      const off = isWeekOff(d, settings);
-                      const isToday = d.getDate() === today.getDate() &&
-                        d.getMonth() === today.getMonth() &&
-                        d.getFullYear() === today.getFullYear();
+                      const off  = isWeekOff(d, settings);
+                      const hol  = isHoliday(d, settings);
+                      const isTd = d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
                       return (
                         <th key={d.getDate()}
                           className={`text-center px-0.5 py-2 border-l border-gray-100
-                            ${off ? 'text-gray-300' : 'text-gray-600'}
-                            ${isToday ? 'bg-indigo-50' : ''}`}
+                            ${(off || hol) ? 'text-gray-300' : 'text-gray-600'}
+                            ${isTd ? 'bg-indigo-50' : ''}`}
                           style={{ minWidth: 38, width: 38 }}>
-                          <div className={`text-xs font-bold ${isToday ? 'text-indigo-600' : ''}`}>
-                            {d.getDate()}
-                          </div>
-                          <div className={`text-[9px] font-normal ${off ? 'text-gray-300' : 'text-gray-400'}`}>
-                            {DAY_SHORT[d.getDay()]}
-                          </div>
+                          <div className={`text-xs font-bold ${isTd ? 'text-indigo-600' : ''}`}>{d.getDate()}</div>
+                          <div className={`text-[9px] ${(off||hol) ? 'text-gray-300' : 'text-gray-400'}`}>{DAY_SHORT[d.getDay()]}</div>
                         </th>
                       );
                     })}
-
-                    {/* Summary columns */}
                     {[['P','green'],['A','red'],['WFH','blue'],['L','amber'],['H','purple']].map(([s,c]) => (
-                      <th key={s} className={`text-center px-2 py-3 border-l-2 border-gray-200 text-xs font-bold text-${c}-600`}
-                          style={{ minWidth: 36 }}>
-                        {s}
-                      </th>
+                      <th key={s} className={`text-center px-2 py-3 border-l-2 border-gray-200 text-xs font-bold text-${c}-600`} style={{ minWidth: 36 }}>{s}</th>
                     ))}
                   </tr>
                 </thead>
-
                 <tbody>
                   {activeEmps.map((emp, ri) => {
                     const stats = getStats(emp.id);
                     return (
                       <tr key={emp.id}
                         className={`group border-t border-gray-50 ${ri % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'} hover:bg-indigo-50/20`}>
-
-                        {/* Employee name cell */}
-                        <td className={`sticky-col px-4 py-2 ${ri % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'} group-hover:bg-indigo-50/20`}
-                            style={{ zIndex: 10 }}>
+                        <td className={`sticky-col px-4 py-2 ${ri % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'} group-hover:bg-indigo-50/20`} style={{ zIndex: 10 }}>
                           <div className="flex items-center gap-2">
                             <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs flex-shrink-0">
                               {emp.name.charAt(0).toUpperCase()}
@@ -498,34 +674,31 @@ export default function HomePage() {
                                 className="text-sm font-semibold text-gray-800 hover:text-indigo-600 transition text-left">
                                 {emp.name}
                               </button>
-                              {emp.designation && (
-                                <p className="text-xs text-gray-400 leading-none mt-0.5">{emp.designation}</p>
-                              )}
+                              {emp.designation && <p className="text-xs text-gray-400 leading-none mt-0.5">{emp.designation}</p>}
                             </div>
                           </div>
                         </td>
 
-                        {/* Day cells */}
                         {days.map(d => {
-                          const off = isWeekOff(d, settings);
+                          const off    = isWeekOff(d, settings);
+                          const hol    = isHoliday(d, settings);
+                          const holNm  = hol ? getHolidayName(d, settings) : '';
                           const active = isDayActiveForEmployee(emp, d);
                           const dayStr = String(d.getDate());
                           const status = attendance[emp.id]?.[dayStr] || '';
-                          const isToday = d.getDate() === today.getDate() &&
-                            d.getMonth() === today.getMonth() &&
-                            d.getFullYear() === today.getFullYear();
+                          const isTd   = d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
 
                           return (
-                            <td key={d.getDate()}
-                              className={`p-0.5 border-l border-gray-50 ${isToday ? 'bg-indigo-50/40' : ''}`}>
+                            <td key={d.getDate()} className={`p-0.5 border-l border-gray-50 ${isTd ? 'bg-indigo-50/40' : ''}`}>
                               {off ? (
                                 <div className="att-cell weekoff">WO</div>
+                              ) : hol ? (
+                                <div className="att-cell holiday" title={holNm}>HOL</div>
                               ) : !active ? (
                                 <div className="att-cell inactive">—</div>
                               ) : (
-                                <div
-                                  className={`att-cell ${STATUS_STYLE[status]}`}
-                                  onClick={() => handleCell(emp.id, dayStr, off, active)}
+                                <div className={`att-cell ${STATUS_STYLE[status]}`}
+                                  onClick={() => handleCell(emp.id, dayStr, false, true)}
                                   title={STATUS_LABELS[status] || 'Click to mark'}>
                                   {status === 'WFH' ? 'W' : status || '·'}
                                 </div>
@@ -534,7 +707,6 @@ export default function HomePage() {
                           );
                         })}
 
-                        {/* Summary cells */}
                         <td className="text-center px-2 text-xs font-bold text-green-600 border-l-2 border-gray-200">{stats.P || '—'}</td>
                         <td className="text-center px-2 text-xs font-bold text-red-600">{stats.A || '—'}</td>
                         <td className="text-center px-2 text-xs font-bold text-blue-600">{stats.WFH || '—'}</td>
@@ -548,39 +720,43 @@ export default function HomePage() {
             </div>
           </div>
         )}
-
-        {/* Resigned employees notice */}
-        {employees.filter(e => e.resignedDate && isEmployeeActiveInMonth(e, year, month)).length > 0 && (
-          <div className="mt-3 px-4 py-2 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700 flex items-center gap-2">
-            <span>⚠️</span>
-            <span>
-              {employees.filter(e => e.resignedDate && isEmployeeActiveInMonth(e, year, month)).map(e => e.name).join(', ')} resigned/terminated this month — included for salary purposes only.
-            </span>
-          </div>
-        )}
       </main>
 
-      {/* ── Modals ──────────────────────────────────────────────── */}
-      {modal === 'addEmp' && (
-        <EmployeeModal onSave={handleSaveEmp} onClose={() => setModal(null)} />
-      )}
-      {modal === 'editEmp' && editingEmp && (
+      {/* ── Modals ─────────────────────────────────────────────── */}
+      {modal === 'addEmp'      && <EmployeeModal onSave={handleSaveEmp} onClose={() => setModal(null)} />}
+      {modal === 'editEmp'     && editingEmp && (
         <EmployeeModal initial={editingEmp} onSave={handleSaveEmp}
-          onClose={() => { setModal(null); setEditingEmp(null); }}
-          onDelete={handleDeleteEmp} />
+          onClose={() => { setModal(null); setEditingEmp(null); }} onDelete={handleDeleteEmp} />
       )}
-      {modal === 'weekoff' && (
-        <WeekOffModal yearMonth={ym} settings={settings}
-          onSave={handleSaveSettings} onClose={() => setModal(null)} />
+      {modal === 'settings'    && (
+        <SettingsModal yearMonth={ym} year={year} month={month}
+          settings={settings} onSave={handleSaveSettings} onClose={() => setModal(null)} />
       )}
-      {modal === 'salary' && (
+      {modal === 'salary'      && (
         <SalaryModal employees={activeEmps} year={year} month={month}
           attendance={attendance} settings={settings} onClose={() => setModal(null)} />
       )}
-      {modal === 'download' && (
+      {modal === 'download'    && (
         <DownloadModal employees={activeEmps} year={year} month={month}
           attendance={attendance} settings={settings} onClose={() => setModal(null)} />
       )}
+      {modal === 'changePass'  && <ChangePasswordModal onClose={() => setModal(null)} />}
     </div>
   );
+}
+
+// ─── Root: handles login gate ─────────────────────────────────────────────────
+
+export default function HomePage() {
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [checked,  setChecked]  = useState(false);
+
+  useEffect(() => {
+    setLoggedIn(isLoggedIn());
+    setChecked(true);
+  }, []);
+
+  if (!checked) return null;
+  if (!loggedIn) return <LoginPage onLogin={() => setLoggedIn(true)} />;
+  return <AttendanceApp />;
 }
