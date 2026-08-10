@@ -144,7 +144,7 @@ function EmployeeModal({ initial, onSave, onClose, onDelete }) {
     name: '', designation: '', salary: '', joiningDate: '', resignedDate: ''
   });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-  const valid = form.name.trim() && Number(form.salary) > 0 && form.joiningDate;
+  const valid = form.name.trim() && form.salary !== '' && Number(form.salary) >= 0 && form.joiningDate;
 
   return (
     <Modal title={initial ? 'Edit Employee' : 'Add Employee'} onClose={onClose}>
@@ -567,6 +567,147 @@ function ChangePasswordModal({ onClose }) {
   );
 }
 
+// ─── Employees Tab View ───────────────────────────────────────────────────────
+
+function EmployeesView({ employees, onAdd, onEdit, onDelete }) {
+  const [filter, setFilter] = useState('all');
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const getStatus = (emp) => {
+    if (!emp.resignedDate) return { label: 'Active', cls: 'bg-green-100 text-green-700' };
+    if (emp.resignedDate >= todayStr) return { label: 'Notice Period', cls: 'bg-amber-100 text-amber-700' };
+    return { label: 'Terminated', cls: 'bg-red-100 text-red-700' };
+  };
+
+  const filtered = employees.filter(e => {
+    if (filter === 'active')     return !e.resignedDate;
+    if (filter === 'terminated') return !!e.resignedDate;
+    return true;
+  });
+
+  const activeCount     = employees.filter(e => !e.resignedDate).length;
+  const terminatedCount = employees.filter(e => !!e.resignedDate).length;
+
+  return (
+    <div className="flex-1 p-4 max-w-screen-2xl mx-auto w-full">
+
+      {/* Header */}
+      <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-gray-800">Employee Management</h2>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {activeCount} active · {terminatedCount} terminated · {employees.length} total
+          </p>
+        </div>
+        <button onClick={onAdd}
+          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-sm transition">
+          + Add Employee
+        </button>
+      </div>
+
+      {/* Filter pills */}
+      <div className="flex gap-2 mb-4">
+        {[['all','All Employees'],['active','Active'],['terminated','Terminated']].map(([val, label]) => (
+          <button key={val} onClick={() => setFilter(val)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition
+              ${filter === val ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Cards grid */}
+      {filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-3">
+          <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center text-2xl">👤</div>
+          <p className="text-gray-400 font-medium">No employees found</p>
+          {filter === 'all' && (
+            <button onClick={onAdd}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition">
+              + Add First Employee
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filtered.map(emp => {
+            const status = getStatus(emp);
+            return (
+              <div key={emp.id}
+                className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition p-5 flex flex-col">
+
+                {/* Top row */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-black text-lg flex-shrink-0">
+                      {emp.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-bold text-gray-800 truncate">{emp.name}</p>
+                      <p className="text-xs text-gray-400 truncate">{emp.designation || '—'}</p>
+                    </div>
+                  </div>
+                  <span className={`text-xs px-2 py-1 rounded-full font-semibold flex-shrink-0 ml-2 ${status.cls}`}>
+                    {status.label}
+                  </span>
+                </div>
+
+                {/* Details */}
+                <div className="flex-1 space-y-2 text-sm mb-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">Monthly Salary</span>
+                    <span className="font-bold text-gray-800">
+                      {emp.salary === 0 ? '₹0 (No pay)' : `₹${emp.salary.toLocaleString('en-IN')}`}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">Joined</span>
+                    <span className="text-gray-600">
+                      {emp.joiningDate
+                        ? new Date(emp.joiningDate + 'T00:00:00').toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })
+                        : '—'}
+                    </span>
+                  </div>
+                  {emp.resignedDate && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">Resigned</span>
+                      <span className="text-red-600 font-medium">
+                        {new Date(emp.resignedDate + 'T00:00:00').toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Note for terminated */}
+                {emp.resignedDate && (
+                  <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-2 py-1.5 mb-3">
+                    Hidden from attendance from{' '}
+                    {new Date(new Date(emp.resignedDate + 'T00:00:00').getFullYear(),
+                              new Date(emp.resignedDate + 'T00:00:00').getMonth() + 1, 1)
+                      .toLocaleDateString('en-IN', { month:'long', year:'numeric' })} onwards
+                  </p>
+                )}
+
+                {/* Actions */}
+                <div className="flex gap-2 mt-auto">
+                  <button onClick={() => onEdit(emp)}
+                    className="flex-1 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold rounded-lg text-xs transition">
+                    ✏️ Edit
+                  </button>
+                  <button onClick={() => onDelete(emp.id)}
+                    className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-lg text-xs transition">
+                    🗑️
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main App ─────────────────────────────────────────────────────────────────
 
 function AttendanceApp() {
@@ -580,6 +721,7 @@ function AttendanceApp() {
 
   const [modal,       setModal]       = useState(null);
   const [editingEmp,  setEditingEmp]  = useState(null);
+  const [tab,         setTab]         = useState('attendance');
 
   const ym = formatYearMonth(year, month);
 
@@ -711,8 +853,23 @@ function AttendanceApp() {
         </div>
       </header>
 
-      {/* ── Legend ─────────────────────────────────────────────── */}
+      {/* ── Tabs ───────────────────────────────────────────────── */}
       <div className="bg-white border-b border-gray-100">
+        <div className="max-w-screen-2xl mx-auto px-4 flex gap-0">
+          {[['attendance','📋 Attendance'],['employees','👥 Employees']].map(([t, label]) => (
+            <button key={t} onClick={() => setTab(t)}
+              className={`px-5 py-3 text-sm font-semibold border-b-2 transition
+                ${tab === t
+                  ? 'border-indigo-600 text-indigo-700'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-200'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Legend (attendance tab only) ───────────────────────── */}
+      {tab === 'attendance' && <div className="bg-white border-b border-gray-100">
         <div className="max-w-screen-2xl mx-auto px-4 py-2 flex items-center gap-4 flex-wrap">
           <span className="text-xs text-gray-400 font-medium">CLICK TO CYCLE:</span>
           {STATUS_CYCLE.filter(Boolean).map(s => (
@@ -733,10 +890,20 @@ function AttendanceApp() {
             <span className="text-xs text-gray-500">Holiday</span>
           </span>
         </div>
-      </div>
+      </div>}
 
-      {/* ── Grid ───────────────────────────────────────────────── */}
-      <main className="flex-1 p-4 max-w-screen-2xl mx-auto w-full">
+      {/* ── Employees Tab ──────────────────────────────────────── */}
+      {tab === 'employees' && (
+        <EmployeesView
+          employees={employees}
+          onAdd={() => { setEditingEmp(null); setModal('addEmp'); }}
+          onEdit={(emp) => { setEditingEmp(emp); setModal('editEmp'); }}
+          onDelete={handleDeleteEmp}
+        />
+      )}
+
+      {/* ── Grid (attendance tab only) ─────────────────────────── */}
+      {tab === 'attendance' && <main className="flex-1 p-4 max-w-screen-2xl mx-auto w-full">
         {activeEmps.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4">
             <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center text-3xl">👥</div>
@@ -837,7 +1004,7 @@ function AttendanceApp() {
             </div>
           </div>
         )}
-      </main>
+      </main>}
 
       {/* ── Modals ─────────────────────────────────────────────── */}
       {modal === 'addEmp'      && <EmployeeModal onSave={handleSaveEmp} onClose={() => setModal(null)} />}
