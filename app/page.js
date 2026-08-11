@@ -473,7 +473,7 @@ function SalaryModal({ employees, year, month, attendance, settings, onClose }) 
         <table className="w-full text-xs">
           <thead>
             <tr className="bg-gray-50">
-              {['#','Name','Salary','W.Days','P','WFH','A','L','H','Paid L','Unpaid L','Per Day','Net Salary','Deduction'].map(h => (
+              {['#','Name','Salary','W.Days','P','WFH','A','L','H','Paid L','Absent Ded.','Per Day','Net Salary','Deduction'].map(h => (
                 <th key={h} className="px-3 py-2 text-left font-semibold text-gray-600 whitespace-nowrap border-b border-gray-100">{h}</th>
               ))}
             </tr>
@@ -496,7 +496,7 @@ function SalaryModal({ employees, year, month, attendance, settings, onClose }) 
                   <td className="px-3 py-2 text-amber-700">{c.L || '—'}</td>
                   <td className="px-3 py-2 text-purple-700">{c.H || '—'}</td>
                   <td className="px-3 py-2 text-indigo-700">{c.paidLeaves}</td>
-                  <td className="px-3 py-2 text-red-600">{c.unpaidLeaves}</td>
+                  <td className="px-3 py-2 text-red-600">{c.unpaidAbsent}</td>
                   <td className="px-3 py-2">{fmt(c.perDay)}</td>
                   <td className="px-3 py-2 font-bold text-gray-800">{fmt(c.netSalary)}</td>
                   <td className="px-3 py-2 text-red-600">{c.deduction > 0 ? `-${fmt(c.deduction)}` : '—'}</td>
@@ -510,8 +510,9 @@ function SalaryModal({ employees, year, month, attendance, settings, onClose }) 
       <div className="mt-5 bg-indigo-50 rounded-xl p-4 text-xs text-indigo-800 space-y-1">
         <p className="font-semibold">Salary formula:</p>
         <p>• Per Day = Monthly Salary ÷ Working Days (excludes Sundays, week-off Saturdays, holidays)</p>
-        <p>• Paid Leave Quota: 2 if previous month had zero A/L, otherwise 1</p>
-        <p>• Net = Per Day × (Present + WFH + Paid Leaves + Half Days × 0.5)</p>
+        <p>• Leave (L) = Paid — counted as a full working day, no deduction</p>
+        <p>• Absent (A) = Unpaid — deducted from salary</p>
+        <p>• Net = Per Day × (Present + WFH + Leave + Half Days × 0.5)</p>
       </div>
     </Modal>
   );
