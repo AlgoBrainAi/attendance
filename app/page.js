@@ -799,10 +799,11 @@ function AttendanceApp({ darkMode, toggleDark }) {
   const [migrating,  setMigrating]  = useState(false);
   const [showMigrate, setShowMigrate] = useState(false);
 
-  const [modal,       setModal]       = useState(null);
-  const [editingEmp,  setEditingEmp]  = useState(null);
-  const [tab,         setTab]         = useState('attendance');
-  const [ctxMenu,     setCtxMenu]     = useState(null);
+  const [modal,             setModal]             = useState(null);
+  const [editingEmp,        setEditingEmp]        = useState(null);
+  const [tab,               setTab]               = useState('attendance');
+  const [ctxMenu,           setCtxMenu]           = useState(null);
+  const [empColCollapsed,   setEmpColCollapsed]   = useState(false);
 
   const ym = formatYearMonth(year, month);
 
@@ -1105,8 +1106,20 @@ function AttendanceApp({ darkMode, toggleDark }) {
                 <thead>
                   <tr className="bg-gray-50">
                     <th className="sticky-col bg-gray-50 py-3" style={{ minWidth: 28, width: 28, zIndex: 20, paddingLeft: 6, paddingRight: 0 }} />
-                    <th className="sticky-col bg-gray-50 px-4 py-3 text-left" style={{ minWidth: 220, left: 28, zIndex: 20 }}>
-                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Employee</span>
+                    <th className="sticky-col bg-gray-50 py-3 text-left"
+                        style={{ minWidth: empColCollapsed ? 48 : 220, width: empColCollapsed ? 48 : undefined, left: 28, zIndex: 20, paddingLeft: empColCollapsed ? 4 : 16, paddingRight: empColCollapsed ? 4 : 16 }}>
+                      <div className="flex items-center gap-1">
+                        {!empColCollapsed && (
+                          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex-1">Employee</span>
+                        )}
+                        <button
+                          onClick={() => setEmpColCollapsed(v => !v)}
+                          title={empColCollapsed ? 'Expand employee column' : 'Collapse employee column'}
+                          className="w-5 h-5 rounded flex items-center justify-center text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition flex-shrink-0 text-sm font-bold"
+                        >
+                          {empColCollapsed ? '›' : '‹'}
+                        </button>
+                      </div>
                     </th>
                     {days.map(d => {
                       const off  = isWeekOff(d, settings);
@@ -1143,19 +1156,27 @@ function AttendanceApp({ darkMode, toggleDark }) {
                             style={{ width: 28, minWidth: 28, paddingLeft: 6, paddingRight: 0, zIndex: 10 }}>
                           <span className="text-gray-300 flex items-center justify-center"><IconGrip /></span>
                         </td>
-                        <td className={`sticky-col px-4 py-2 ${ri % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'} group-hover:bg-indigo-50/20`} style={{ left: 28, zIndex: 10 }}>
-                          <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs flex-shrink-0">
+                        <td className={`sticky-col py-2 ${ri % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'} group-hover:bg-indigo-50/20`}
+                            style={{ left: 28, zIndex: 10, minWidth: empColCollapsed ? 48 : 220, width: empColCollapsed ? 48 : undefined, paddingLeft: empColCollapsed ? 4 : 16, paddingRight: empColCollapsed ? 4 : 16 }}>
+                          {empColCollapsed ? (
+                            <div title={emp.name + (emp.designation ? ` · ${emp.designation}` : '')}
+                              className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs mx-auto cursor-default select-none">
                               {emp.name.charAt(0).toUpperCase()}
                             </div>
-                            <div>
-                              <button onClick={() => { setEditingEmp(emp); setModal('editEmp'); }}
-                                className="text-sm font-semibold text-gray-800 hover:text-indigo-600 transition text-left">
-                                {emp.name}
-                              </button>
-                              {emp.designation && <p className="text-xs text-gray-400 leading-none mt-0.5">{emp.designation}</p>}
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs flex-shrink-0">
+                                {emp.name.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <button onClick={() => { setEditingEmp(emp); setModal('editEmp'); }}
+                                  className="text-sm font-semibold text-gray-800 hover:text-indigo-600 transition text-left">
+                                  {emp.name}
+                                </button>
+                                {emp.designation && <p className="text-xs text-gray-400 leading-none mt-0.5">{emp.designation}</p>}
+                              </div>
                             </div>
-                          </div>
+                          )}
                         </td>
 
                         {days.map(d => {
