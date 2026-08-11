@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   getMonthDays, isWeekOff, isHoliday, getHolidayName, isDayOff,
   isDayActiveForEmployee, isEmployeeActiveInMonth,
@@ -57,6 +57,13 @@ const IconPlus     = () => IC('M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 
 const IconCheck    = () => IC('M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z');
 const IconSun      = () => IC('M10 2a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 10 2ZM10 15a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 10 15ZM10 7a3 3 0 1 0 0 6 3 3 0 0 0 0-6ZM15.657 5.404a.75.75 0 1 0-1.06-1.06l-1.061 1.06a.75.75 0 0 0 1.06 1.06l1.06-1.06ZM6.464 14.596a.75.75 0 1 0-1.06-1.06l-1.06 1.06a.75.75 0 0 0 1.06 1.06l1.06-1.06ZM18 10a.75.75 0 0 1-.75.75h-1.5a.75.75 0 0 1 0-1.5h1.5A.75.75 0 0 1 18 10ZM5 10a.75.75 0 0 1-.75.75h-1.5a.75.75 0 0 1 0-1.5h1.5A.75.75 0 0 1 5 10ZM14.596 15.657a.75.75 0 0 0 1.06-1.06l-1.06-1.061a.75.75 0 1 0-1.06 1.06l1.06 1.06ZM5.404 6.464a.75.75 0 0 0 1.06-1.06l-1.06-1.06a.75.75 0 1 0-1.061 1.06l1.06 1.06Z');
 const IconMoon     = () => IC('M17.293 13.293A8 8 0 0 1 6.707 2.707a8.001 8.001 0 1 0 10.586 10.586Z');
+const IconGrip     = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="14" height="14" className="inline-block flex-shrink-0">
+    <path d="M7 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3ZM7 8.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3ZM7 15a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3ZM13 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3ZM13 8.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3ZM13 15a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z" />
+  </svg>
+);
+const IconChevUp   = () => IC('M9.47 6.47a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 1 1-1.06 1.06L10 8.06l-3.72 3.72a.75.75 0 0 1-1.06-1.06l4.25-4.25Z');
+const IconChevDown = () => IC('M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z');
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -605,7 +612,7 @@ function ChangePasswordModal({ onClose }) {
 
 // ─── Employees Tab View ───────────────────────────────────────────────────────
 
-function EmployeeCard({ emp, onEdit, onDelete }) {
+function EmployeeCard({ emp, onEdit, onDelete, onMoveUp, onMoveDown }) {
   const [confirming, setConfirming] = useState(false);
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -686,6 +693,20 @@ function EmployeeCard({ emp, onEdit, onDelete }) {
             className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold rounded-lg text-xs transition">
             <IconPencil /> Edit
           </button>
+          {onMoveUp && (
+            <button onClick={onMoveUp}
+              className="px-2 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-500 rounded-lg text-xs transition flex items-center"
+              title="Move up">
+              <IconChevUp />
+            </button>
+          )}
+          {onMoveDown && (
+            <button onClick={onMoveDown}
+              className="px-2 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-500 rounded-lg text-xs transition flex items-center"
+              title="Move down">
+              <IconChevDown />
+            </button>
+          )}
           <button onClick={() => setConfirming(true)}
             className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-lg text-xs transition flex items-center">
             <IconTrash />
@@ -696,7 +717,7 @@ function EmployeeCard({ emp, onEdit, onDelete }) {
   );
 }
 
-function EmployeesView({ employees, onAdd, onEdit, onDelete }) {
+function EmployeesView({ employees, onAdd, onEdit, onDelete, onMove }) {
   const [filter, setFilter] = useState('all');
 
   const filtered = employees.filter(e => {
@@ -747,8 +768,15 @@ function EmployeesView({ employees, onAdd, onEdit, onDelete }) {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filtered.map(emp => (
-            <EmployeeCard key={emp.id} emp={emp} onEdit={onEdit} onDelete={onDelete} />
+          {filtered.map((emp, idx) => (
+            <EmployeeCard
+              key={emp.id}
+              emp={emp}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onMoveUp={filter === 'all' && idx > 0 ? () => onMove(emp.id, -1) : null}
+              onMoveDown={filter === 'all' && idx < filtered.length - 1 ? () => onMove(emp.id, 1) : null}
+            />
           ))}
         </div>
       )}
@@ -802,6 +830,40 @@ function AttendanceApp({ darkMode, toggleDark }) {
       return updated;
     });
   }, [ym]);
+
+  // ── Drag-to-reorder ──────────────────────────────────────────────────────────
+  const dragId       = useRef(null);
+  const [dragOverId, setDragOverId] = useState(null);
+
+  const handleDragStart = (id) => { dragId.current = id; };
+  const handleDragEnd   = () => { dragId.current = null; setDragOverId(null); };
+  const handleDragOver  = (e, id) => { e.preventDefault(); setDragOverId(id); };
+  const handleDrop      = (e, targetId) => {
+    e.preventDefault();
+    const fromId = dragId.current;
+    dragId.current = null; setDragOverId(null);
+    if (!fromId || fromId === targetId) return;
+    setEmployees(prev => {
+      const arr = [...prev];
+      const fi = arr.findIndex(x => x.id === fromId);
+      const ti = arr.findIndex(x => x.id === targetId);
+      const [item] = arr.splice(fi, 1);
+      arr.splice(ti, 0, item);
+      saveEmployees(arr);
+      return arr;
+    });
+  };
+  const moveEmployee = useCallback((id, dir) => {
+    setEmployees(prev => {
+      const arr = [...prev];
+      const i = arr.findIndex(x => x.id === id);
+      const ni = i + dir;
+      if (ni < 0 || ni >= arr.length) return prev;
+      [arr[i], arr[ni]] = [arr[ni], arr[i]];
+      saveEmployees(arr);
+      return arr;
+    });
+  }, []);
 
   const handleSetStatus = useCallback((empId, dayStr, status) => {
     setAttendance(prev => {
@@ -966,6 +1028,7 @@ function AttendanceApp({ darkMode, toggleDark }) {
           onAdd={() => { setEditingEmp(null); setModal('addEmp'); }}
           onEdit={(emp) => { setEditingEmp(emp); setModal('editEmp'); }}
           onDelete={handleDeleteEmp}
+          onMove={moveEmployee}
         />
       )}
 
@@ -986,7 +1049,8 @@ function AttendanceApp({ darkMode, toggleDark }) {
               <table className="border-collapse" style={{ minWidth: 'max-content' }}>
                 <thead>
                   <tr className="bg-gray-50">
-                    <th className="sticky-col bg-gray-50 px-4 py-3 text-left" style={{ minWidth: 220, zIndex: 20 }}>
+                    <th className="sticky-col bg-gray-50 py-3" style={{ minWidth: 28, width: 28, zIndex: 20, paddingLeft: 6, paddingRight: 0 }} />
+                    <th className="sticky-col bg-gray-50 px-4 py-3 text-left" style={{ minWidth: 220, left: 28, zIndex: 20 }}>
                       <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Employee</span>
                     </th>
                     {days.map(d => {
@@ -1014,8 +1078,17 @@ function AttendanceApp({ darkMode, toggleDark }) {
                     const stats = getStats(emp.id);
                     return (
                       <tr key={emp.id}
-                        className={`group border-t border-gray-50 ${ri % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'} hover:bg-indigo-50/20`}>
-                        <td className={`sticky-col px-4 py-2 ${ri % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'} group-hover:bg-indigo-50/20`} style={{ zIndex: 10 }}>
+                        draggable
+                        onDragStart={() => handleDragStart(emp.id)}
+                        onDragEnd={handleDragEnd}
+                        onDragOver={e => handleDragOver(e, emp.id)}
+                        onDrop={e => handleDrop(e, emp.id)}
+                        className={`group border-t border-gray-50 ${ri % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'} hover:bg-indigo-50/20 cursor-grab active:cursor-grabbing ${dragOverId === emp.id ? 'border-t-2 border-indigo-400' : ''}`}>
+                        <td className={`sticky-col py-2 ${ri % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'} group-hover:bg-indigo-50/20`}
+                            style={{ width: 28, minWidth: 28, paddingLeft: 6, paddingRight: 0, zIndex: 10 }}>
+                          <span className="text-gray-300 flex items-center justify-center"><IconGrip /></span>
+                        </td>
+                        <td className={`sticky-col px-4 py-2 ${ri % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'} group-hover:bg-indigo-50/20`} style={{ left: 28, zIndex: 10 }}>
                           <div className="flex items-center gap-2">
                             <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs flex-shrink-0">
                               {emp.name.charAt(0).toUpperCase()}
