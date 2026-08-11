@@ -888,7 +888,6 @@ function AttendanceApp({ darkMode, toggleDark }) {
   };
 
   const handleDeleteEmp = (id) => {
-    if (!confirm('Remove this employee? Their attendance data will be kept.')) return;
     setEmployees(prev => { const n = prev.filter(e => e.id !== id); saveEmployees(n); return n; });
     setModal(null); setEditingEmp(null);
   };
