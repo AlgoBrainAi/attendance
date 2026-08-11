@@ -764,6 +764,7 @@ function AttendanceApp() {
   const [modal,       setModal]       = useState(null);
   const [editingEmp,  setEditingEmp]  = useState(null);
   const [tab,         setTab]         = useState('attendance');
+  const [ctxMenu,     setCtxMenu]     = useState(null); // { x, y, empId, dayStr }
 
   const ym = formatYearMonth(year, month);
 
@@ -794,6 +795,17 @@ function AttendanceApp() {
       saveAttendance(ym, updated);
       return updated;
     });
+  }, [ym]);
+
+  const handleSetStatus = useCallback((empId, dayStr, status) => {
+    setAttendance(prev => {
+      const updated = { ...prev, [empId]: { ...(prev[empId] || {}) } };
+      if (status === '') delete updated[empId][dayStr];
+      else updated[empId][dayStr] = status;
+      saveAttendance(ym, updated);
+      return updated;
+    });
+    setCtxMenu(null);
   }, [ym]);
 
   const handleSaveEmp = (emp) => {
@@ -1025,7 +1037,8 @@ function AttendanceApp() {
                               ) : (
                                 <div className={`att-cell ${STATUS_STYLE[status]}`}
                                   onClick={() => handleCell(emp.id, dayStr, false, true)}
-                                  title={STATUS_LABELS[status] || 'Click to mark'}>
+                                  onContextMenu={e => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, empId: emp.id, dayStr }); }}
+                                  title={STATUS_LABELS[status] || 'Click to mark / Right-click to pick'}>
                                   {status === 'WFH' ? 'W' : status || '·'}
                                 </div>
                               )}
@@ -1047,6 +1060,39 @@ function AttendanceApp() {
           </div>
         )}
       </main>}
+
+      {/* ── Context Menu ───────────────────────────────────────── */}
+      {ctxMenu && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setCtxMenu(null)} />
+          <div
+            className="fixed z-50 bg-white border border-gray-200 rounded-xl shadow-xl py-1.5 min-w-[140px]"
+            style={{ top: ctxMenu.y, left: ctxMenu.x }}>
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-3 pb-1">Set status</p>
+            {[
+              ['P',   'Present',       'bg-green-500 text-white'],
+              ['A',   'Absent',        'bg-red-500 text-white'],
+              ['WFH', 'Work From Home','bg-blue-500 text-white'],
+              ['L',   'Leave',         'bg-amber-500 text-white'],
+              ['H',   'Half Day',      'bg-purple-500 text-white'],
+            ].map(([s, label, cls]) => (
+              <button key={s} onClick={() => handleSetStatus(ctxMenu.empId, ctxMenu.dayStr, s)}
+                className="w-full flex items-center gap-2.5 px-3 py-1.5 hover:bg-gray-50 text-sm text-left">
+                <span className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold ${cls}`}>
+                  {s === 'WFH' ? 'W' : s}
+                </span>
+                <span className="text-gray-700">{label}</span>
+              </button>
+            ))}
+            <div className="border-t border-gray-100 my-1" />
+            <button onClick={() => handleSetStatus(ctxMenu.empId, ctxMenu.dayStr, '')}
+              className="w-full flex items-center gap-2.5 px-3 py-1.5 hover:bg-red-50 text-sm text-left">
+              <span className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold bg-gray-100 text-gray-400">×</span>
+              <span className="text-red-500 font-medium">Clear</span>
+            </button>
+          </div>
+        </>
+      )}
 
       {/* ── Modals ─────────────────────────────────────────────── */}
       {modal === 'addEmp'      && <EmployeeModal onSave={handleSaveEmp} onClose={() => setModal(null)} />}
