@@ -55,6 +55,8 @@ const IconEye      = () => IC('M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z M.6
 const IconEyeOff   = () => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="16" height="16" className="inline-block flex-shrink-0"><path fillRule="evenodd" d="M3.28 2.22a.75.75 0 0 0-1.06 1.06l14.5 14.5a.75.75 0 1 0 1.06-1.06l-1.745-1.745a10.029 10.029 0 0 0 3.3-4.38 1.651 1.651 0 0 0 0-1.185A10.004 10.004 0 0 0 9.999 3a9.956 9.956 0 0 0-4.744 1.194L3.28 2.22ZM7.752 6.69l1.092 1.092a2.5 2.5 0 0 1 3.374 3.373l1.091 1.092a4 4 0 0 0-5.557-5.557Z" clipRule="evenodd" /><path d="M10.748 13.93l2.523 2.523a10.285 10.285 0 0 1-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 0 1 0-1.185A10.033 10.033 0 0 1 5.47 5.948L6.53 7.008A8.503 8.503 0 0 0 2.53 10c1.445 3.223 4.621 5.5 8.47 5.5.02 0 .042 0 .063-.001l-.315-.315-.315-.315a2.501 2.501 0 0 1-.315.061Z" /></svg>;
 const IconPlus     = () => IC('M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z');
 const IconCheck    = () => IC('M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z');
+const IconSun      = () => IC('M10 2a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 10 2ZM10 15a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 10 15ZM10 7a3 3 0 1 0 0 6 3 3 0 0 0 0-6ZM15.657 5.404a.75.75 0 1 0-1.06-1.06l-1.061 1.06a.75.75 0 0 0 1.06 1.06l1.06-1.06ZM6.464 14.596a.75.75 0 1 0-1.06-1.06l-1.06 1.06a.75.75 0 0 0 1.06 1.06l1.06-1.06ZM18 10a.75.75 0 0 1-.75.75h-1.5a.75.75 0 0 1 0-1.5h1.5A.75.75 0 0 1 18 10ZM5 10a.75.75 0 0 1-.75.75h-1.5a.75.75 0 0 1 0-1.5h1.5A.75.75 0 0 1 5 10ZM14.596 15.657a.75.75 0 0 0 1.06-1.06l-1.06-1.061a.75.75 0 1 0-1.06 1.06l1.06 1.06ZM5.404 6.464a.75.75 0 0 0 1.06-1.06l-1.06-1.06a.75.75 0 1 0-1.061 1.06l1.06 1.06Z');
+const IconMoon     = () => IC('M17.293 13.293A8 8 0 0 1 6.707 2.707a8.001 8.001 0 1 0 10.586 10.586Z');
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -84,7 +86,7 @@ function Modal({ title, onClose, children, wide }) {
 
 // ─── Login Page ───────────────────────────────────────────────────────────────
 
-function LoginPage({ onLogin }) {
+function LoginPage({ onLogin, darkMode, toggleDark }) {
   const [id, setId]       = useState('');
   const [pass, setPass]   = useState('');
   const [error, setError] = useState('');
@@ -103,8 +105,12 @@ function LoginPage({ onLogin }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4"
-         style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)' }}>
+    <div className="min-h-screen flex items-center justify-center p-4 relative"
+         style={{ background: darkMode ? 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)' : 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)' }}>
+      <button onClick={toggleDark}
+        className="absolute top-4 right-4 w-9 h-9 rounded-xl bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition">
+        {darkMode ? <IconSun /> : <IconMoon />}
+      </button>
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
         {/* Header */}
         <div className="px-8 pt-10 pb-6 text-center"
@@ -752,7 +758,7 @@ function EmployeesView({ employees, onAdd, onEdit, onDelete }) {
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
 
-function AttendanceApp() {
+function AttendanceApp({ darkMode, toggleDark }) {
   const today = new Date();
   const [year,  setYear]  = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -842,7 +848,7 @@ function AttendanceApp() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#f8fafc' }}>
+    <div className="min-h-screen flex flex-col">
 
       {/* ── Header ─────────────────────────────────────────────── */}
       <header className="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-30">
@@ -874,27 +880,34 @@ function AttendanceApp() {
 
           <div className="flex-1" />
 
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {/* Dark mode toggle */}
+            <button onClick={toggleDark}
+              className="w-9 h-9 flex items-center justify-center rounded-lg bg-white hover:bg-gray-50 border border-gray-200 text-gray-600 transition"
+              title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}>
+              {darkMode ? <IconSun /> : <IconMoon />}
+            </button>
+
             <button onClick={() => { setModal('addEmp'); setEditingEmp(null); }}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
-              <IconPlus /> Add Employee
+              <IconPlus /><span className="hidden sm:inline">Add Employee</span>
             </button>
             <button onClick={() => setModal('settings')}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg transition">
-              <IconCog /> Settings
+              <IconCog /><span className="hidden sm:inline">Settings</span>
             </button>
             <button onClick={() => setModal('salary')}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg transition">
-              <IconRupee /> Salary
+              <IconRupee /><span className="hidden sm:inline">Salary</span>
             </button>
             <button onClick={() => setModal('download')}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition">
-              <IconDownload /> Download
+              <IconDownload /><span className="hidden sm:inline">Download</span>
             </button>
             {/* User menu */}
             <div className="relative group">
               <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg transition">
-                <IconUser /> Admin ▾
+                <IconUser /><span className="hidden sm:inline">Admin ▾</span>
               </button>
               <div className="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-lg py-1 w-44 hidden group-hover:block z-50">
                 <button onClick={() => setModal('changePass')}
@@ -912,11 +925,11 @@ function AttendanceApp() {
         <div className="max-w-screen-2xl mx-auto px-4 flex gap-0">
           {[['attendance', <IconTable />, 'Attendance'], ['employees', <IconUsers />, 'Employees']].map(([t, icon, label]) => (
             <button key={t} onClick={() => setTab(t)}
-              className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition
+              className={`flex items-center gap-2 px-4 sm:px-5 py-3 text-sm font-semibold border-b-2 transition
                 ${tab === t
                   ? 'border-indigo-600 text-indigo-700'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-200'}`}>
-              {icon}{label}
+              {icon}<span>{label}</span>
             </button>
           ))}
         </div>
@@ -1117,18 +1130,30 @@ function AttendanceApp() {
   );
 }
 
-// ─── Root: handles login gate ─────────────────────────────────────────────────
+// ─── Root: handles login gate + dark mode ─────────────────────────────────────
 
 export default function HomePage() {
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [checked,  setChecked]  = useState(false);
+  const [loggedIn,  setLoggedIn]  = useState(false);
+  const [checked,   setChecked]   = useState(false);
+  const [darkMode,  setDarkMode]  = useState(false);
 
   useEffect(() => {
     setLoggedIn(isLoggedIn());
+    const saved = localStorage.getItem('att_dark');
+    const sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    setDarkMode(saved !== null ? saved === '1' : sysDark);
     setChecked(true);
   }, []);
 
+  useEffect(() => {
+    if (darkMode) document.documentElement.classList.add('dark');
+    else          document.documentElement.classList.remove('dark');
+    localStorage.setItem('att_dark', darkMode ? '1' : '0');
+  }, [darkMode]);
+
+  const toggleDark = () => setDarkMode(d => !d);
+
   if (!checked) return null;
-  if (!loggedIn) return <LoginPage onLogin={() => setLoggedIn(true)} />;
-  return <AttendanceApp />;
+  if (!loggedIn) return <LoginPage onLogin={() => setLoggedIn(true)} darkMode={darkMode} toggleDark={toggleDark} />;
+  return <AttendanceApp darkMode={darkMode} toggleDark={toggleDark} />;
 }
