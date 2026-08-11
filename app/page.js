@@ -8,8 +8,8 @@ import {
   getSaturdayNumber, MONTH_NAMES, DAY_SHORT
 } from '../lib/dateUtils';
 import {
-  getEmployees, saveEmployees, getAttendance, saveAttendance,
-  getMonthSettings, saveMonthSettings, DEFAULT_SETTINGS
+  getEmployees, saveEmployees, deleteEmployee, getAttendance, saveAttendance,
+  getMonthSettings, saveMonthSettings, DEFAULT_SETTINGS, migrateFromLocalStorage
 } from '../lib/storage';
 import { STATUS_CYCLE, STATUS_LABELS, STATUS_STYLE, getNextStatus, calculateSalary } from '../lib/salaryCalc';
 import { downloadReport } from '../lib/exportUtils';
@@ -795,19 +795,47 @@ function AttendanceApp({ darkMode, toggleDark }) {
   const [employees,  setEmployees]  = useState([]);
   const [attendance, setAttendance] = useState({});
   const [settings,   setSettings]   = useState(DEFAULT_SETTINGS);
+  const [loading,    setLoading]    = useState(true);
+  const [migrating,  setMigrating]  = useState(false);
+  const [showMigrate, setShowMigrate] = useState(false);
 
   const [modal,       setModal]       = useState(null);
   const [editingEmp,  setEditingEmp]  = useState(null);
   const [tab,         setTab]         = useState('attendance');
-  const [ctxMenu,     setCtxMenu]     = useState(null); // { x, y, empId, dayStr }
+  const [ctxMenu,     setCtxMenu]     = useState(null);
 
   const ym = formatYearMonth(year, month);
 
+  // Load employees once on mount
   useEffect(() => {
-    setEmployees(getEmployees());
-    setAttendance(getAttendance(ym));
-    setSettings(getMonthSettings(ym));
+    getEmployees().then(emps => {
+      setEmployees(emps);
+      setLoading(false);
+      // Show migration banner if browser has local data but Supabase is empty
+      const hasLocal = !!localStorage.getItem('att_employees');
+      if (hasLocal && emps.length === 0) setShowMigrate(true);
+    });
+  }, []);
+
+  // Load month-specific data when month/year changes
+  useEffect(() => {
+    Promise.all([getAttendance(ym), getMonthSettings(ym)]).then(([att, sett]) => {
+      setAttendance(att);
+      setSettings(sett);
+    });
   }, [ym]);
+
+  const handleMigrate = async () => {
+    setMigrating(true);
+    await migrateFromLocalStorage();
+    const emps = await getEmployees();
+    setEmployees(emps);
+    const [att, sett] = await Promise.all([getAttendance(ym), getMonthSettings(ym)]);
+    setAttendance(att);
+    setSettings(sett);
+    setMigrating(false);
+    setShowMigrate(false);
+  };
 
   const goMonth = (dir) => {
     const fn = dir === -1 ? getPrevMonth : getNextMonth;
@@ -822,12 +850,12 @@ function AttendanceApp({ darkMode, toggleDark }) {
   const handleCell = useCallback((empId, dayStr, off, active) => {
     if (off || !active) return;
     setAttendance(prev => {
-      const updated = { ...prev, [empId]: { ...(prev[empId] || {}) } };
-      const cur  = updated[empId][dayStr] || '';
-      const next = getNextStatus(cur);
-      if (next === '') delete updated[empId][dayStr];
-      else updated[empId][dayStr] = next;
-      saveAttendance(ym, updated);
+      const empAtt = { ...(prev[empId] || {}) };
+      const next = getNextStatus(empAtt[dayStr] || '');
+      if (next === '') delete empAtt[dayStr];
+      else empAtt[dayStr] = next;
+      const updated = { ...prev, [empId]: empAtt };
+      saveAttendance(ym, empId, empAtt);
       return updated;
     });
   }, [ym]);
@@ -850,7 +878,7 @@ function AttendanceApp({ darkMode, toggleDark }) {
       const ti = arr.findIndex(x => x.id === targetId);
       const [item] = arr.splice(fi, 1);
       arr.splice(ti, 0, item);
-      saveEmployees(arr);
+      saveEmployees(arr); // fire-and-forget
       return arr;
     });
   };
@@ -868,10 +896,11 @@ function AttendanceApp({ darkMode, toggleDark }) {
 
   const handleSetStatus = useCallback((empId, dayStr, status) => {
     setAttendance(prev => {
-      const updated = { ...prev, [empId]: { ...(prev[empId] || {}) } };
-      if (status === '') delete updated[empId][dayStr];
-      else updated[empId][dayStr] = status;
-      saveAttendance(ym, updated);
+      const empAtt = { ...(prev[empId] || {}) };
+      if (status === '') delete empAtt[dayStr];
+      else empAtt[dayStr] = status;
+      const updated = { ...prev, [empId]: empAtt };
+      saveAttendance(ym, empId, empAtt);
       return updated;
     });
     setCtxMenu(null);
@@ -882,7 +911,7 @@ function AttendanceApp({ darkMode, toggleDark }) {
       const next = prev.find(e => e.id === emp.id)
         ? prev.map(e => e.id === emp.id ? emp : e)
         : [...prev, emp];
-      saveEmployees(next);
+      saveEmployees(next); // fire-and-forget
       return next;
     });
     setModal(null); setEditingEmp(null);
@@ -890,11 +919,12 @@ function AttendanceApp({ darkMode, toggleDark }) {
 
   const handleDeleteEmp = (id) => {
     setEmployees(prev => { const n = prev.filter(e => e.id !== id); saveEmployees(n); return n; });
+    deleteEmployee(id); // fire-and-forget
     setModal(null); setEditingEmp(null);
   };
 
   const handleSaveSettings = (s) => {
-    setSettings(s); saveMonthSettings(ym, s); setModal(null);
+    setSettings(s); saveMonthSettings(ym, s); setModal(null); // fire-and-forget
   };
 
   const getStats = (empId) => {
@@ -909,8 +939,33 @@ function AttendanceApp({ darkMode, toggleDark }) {
     window.location.reload();
   };
 
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="text-center">
+        <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-sm text-gray-500">Loading data…</p>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen flex flex-col">
+
+      {/* ── Migration banner ───────────────────────────────────── */}
+      {showMigrate && (
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-3 flex items-center justify-between gap-4 flex-wrap">
+          <p className="text-sm text-amber-800 font-medium">
+            Local browser data detected. Sync it to the cloud so all your devices see the same data.
+          </p>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button onClick={handleMigrate} disabled={migrating}
+              className="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition">
+              {migrating ? 'Syncing…' : 'Sync to Cloud →'}
+            </button>
+            <button onClick={() => setShowMigrate(false)} className="text-amber-500 hover:text-amber-700 text-lg px-1">×</button>
+          </div>
+        </div>
+      )}
 
       {/* ── Header ─────────────────────────────────────────────── */}
       <header className="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-30">
